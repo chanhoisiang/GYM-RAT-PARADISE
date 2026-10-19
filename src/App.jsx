@@ -1,17 +1,41 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import PTPortal from './pt/PTPortal';
 import {
   Dumbbell, Flame, Brain, TrendingUp, Play, Pause, RotateCcw,
   Plus, Trash2, Check, ChevronLeft, ChevronRight, Sparkles,
-  Camera, Volume2, VolumeX, Database, Download, Upload, Search,
-  Award, Zap, Clock, Calendar, Target, Scale, X,
-  Utensils, CheckCircle2, Trophy, Cloud, CloudOff, RefreshCw,
-  FlameKindling, Activity, Sliders, ChevronRight as ArrowRight
+  Camera, Volume2, VolumeX, Database, Download, Search,
+  Zap, Clock, X, CheckCircle2, Trophy, Menu, RefreshCw, QrCode, User
 } from 'lucide-react';
+import PTPortal from './pt/PTPortal';
+import AuthModal from './pt/AuthModal';
+import SuperBurgerDrawer from './pt/SuperBurgerDrawer';
 
-// ============================================================================
-// EXERCISE LIBRARY & DEFAULT TEMPLATES
-// ============================================================================
+const TRANSLATIONS = {
+  EN: {
+    personalApp: '💪 My Personal Gym App',
+    ptPortal: '📋 PT & Gym Boss Portal',
+    workout: 'Workout',
+    nutrition: 'Nutrition',
+    coach: 'AI Coach',
+    progress: 'Progress',
+  },
+  ZH: {
+    personalApp: '💪 个人健身训练',
+    ptPortal: '📋 私教与馆长系统',
+    workout: '训练记录',
+    nutrition: '饮食与热量',
+    coach: 'AI 助手',
+    progress: '数据与力量',
+  },
+  BM: {
+    personalApp: '💪 Aplikasi Gim Saya',
+    ptPortal: '📋 Portal PT & Bos',
+    workout: 'Latihan',
+    nutrition: 'Nutrisi',
+    coach: 'Jurulatih AI',
+    progress: 'Rekod PR',
+  },
+};
+
 const EXERCISE_LIBRARY = [
   { name: 'Barbell Bench Press', muscle: 'Chest', equipment: 'Barbell', defaultBest: '85kg × 8' },
   { name: 'Incline Dumbbell Press', muscle: 'Chest', equipment: 'Dumbbell', defaultBest: '32.5kg × 10' },
@@ -19,26 +43,18 @@ const EXERCISE_LIBRARY = [
   { name: 'Cable Chest Fly', muscle: 'Chest', equipment: 'Cable', defaultBest: '20kg × 15' },
   { name: 'Weighted Chest Dips', muscle: 'Chest', equipment: 'Bodyweight', defaultBest: '+15kg × 10' },
   { name: 'Overhead Barbell Press (OHP)', muscle: 'Shoulders', equipment: 'Barbell', defaultBest: '55kg × 8' },
-  { name: 'Seated Dumbbell Shoulder Press', muscle: 'Shoulders', equipment: 'Dumbbell', defaultBest: '26kg × 10' },
   { name: 'Dumbbell Lateral Raise', muscle: 'Shoulders', equipment: 'Dumbbell', defaultBest: '14kg × 15' },
   { name: 'Cable Rope Tricep Pushdown', muscle: 'Triceps', equipment: 'Cable', defaultBest: '27.5kg × 12' },
   { name: 'Overhead Cable Tricep Extension', muscle: 'Triceps', equipment: 'Cable', defaultBest: '25kg × 12' },
-  { name: 'Skullcrushers (EZ-Bar)', muscle: 'Triceps', equipment: 'Barbell', defaultBest: '35kg × 10' },
   { name: 'Lat Pulldown (Wide Grip)', muscle: 'Back', equipment: 'Cable', defaultBest: '70kg × 10' },
   { name: 'Barbell Bent-Over Row', muscle: 'Back', equipment: 'Barbell', defaultBest: '80kg × 8' },
-  { name: 'Chest-Supported T-Bar Row', muscle: 'Back', equipment: 'Machine', defaultBest: '60kg × 10' },
   { name: 'Seated Cable Row', muscle: 'Back', equipment: 'Cable', defaultBest: '65kg × 12' },
   { name: 'Face Pulls', muscle: 'Shoulders', equipment: 'Cable', defaultBest: '25kg × 15' },
   { name: 'Incline Dumbbell Curl', muscle: 'Biceps', equipment: 'Dumbbell', defaultBest: '16kg × 10' },
-  { name: 'Barbell EZ-Bar Curl', muscle: 'Biceps', equipment: 'Barbell', defaultBest: '37.5kg × 10' },
-  { name: 'Hammer Curls', muscle: 'Biceps', equipment: 'Dumbbell', defaultBest: '18kg × 12' },
   { name: 'Barbell Back Squat', muscle: 'Legs', equipment: 'Barbell', defaultBest: '120kg × 6' },
-  { name: 'Smith Machine Squat', muscle: 'Legs', equipment: 'Smith Machine', defaultBest: '110kg × 8' },
   { name: 'Romanian Deadlift (RDL)', muscle: 'Legs', equipment: 'Barbell', defaultBest: '110kg × 8' },
   { name: 'Leg Press (45°)', muscle: 'Legs', equipment: 'Machine', defaultBest: '200kg × 10' },
   { name: 'Seated Leg Curl', muscle: 'Legs', equipment: 'Machine', defaultBest: '55kg × 12' },
-  { name: 'Leg Extension', muscle: 'Legs', equipment: 'Machine', defaultBest: '65kg × 15' },
-  { name: 'Standing Calf Raise', muscle: 'Legs', equipment: 'Machine', defaultBest: '80kg × 15' },
 ];
 
 const WORKOUT_TEMPLATES = {
@@ -82,17 +98,6 @@ const WORKOUT_TEMPLATES = {
           { id: 's-10', type: 'D', weight: 10, reps: 15, rpe: 10, done: false },
         ],
       },
-      {
-        id: 'ex-4',
-        name: 'Cable Rope Tricep Pushdown',
-        muscle: 'Triceps',
-        equipment: 'Cable',
-        prevBest: '27.5kg × 12',
-        sets: [
-          { id: 's-11', type: '1', weight: 27.5, reps: 12, rpe: 8.5, done: false },
-          { id: 's-12', type: 'F', weight: 27.5, reps: 11, rpe: 10, done: false },
-        ],
-      },
     ],
   },
   'Pull Day': {
@@ -119,29 +124,6 @@ const WORKOUT_TEMPLATES = {
         sets: [
           { id: 'sp-4', type: '1', weight: 80, reps: 8, rpe: 8.5, done: false },
           { id: 'sp-5', type: '2', weight: 80, reps: 8, rpe: 9.0, done: false },
-          { id: 'sp-6', type: '3', weight: 75, reps: 10, rpe: 9.0, done: false },
-        ],
-      },
-      {
-        id: 'ex-p3',
-        name: 'Face Pulls',
-        muscle: 'Shoulders',
-        equipment: 'Cable',
-        prevBest: '25kg × 15',
-        sets: [
-          { id: 'sp-7', type: '1', weight: 25, reps: 15, rpe: 8.0, done: false },
-          { id: 'sp-8', type: '2', weight: 25, reps: 15, rpe: 8.5, done: false },
-        ],
-      },
-      {
-        id: 'ex-p4',
-        name: 'Incline Dumbbell Curl',
-        muscle: 'Biceps',
-        equipment: 'Dumbbell',
-        prevBest: '16kg × 10',
-        sets: [
-          { id: 'sp-9', type: '1', weight: 16, reps: 10, rpe: 9.0, done: false },
-          { id: 'sp-10', type: 'F', weight: 16, reps: 9, rpe: 10, done: false },
         ],
       },
     ],
@@ -159,67 +141,6 @@ const WORKOUT_TEMPLATES = {
           { id: 'sl-1', type: 'W', weight: 80, reps: 8, rpe: 6.5, done: false },
           { id: 'sl-2', type: '1', weight: 120, reps: 6, rpe: 8.5, done: false },
           { id: 'sl-3', type: '2', weight: 120, reps: 6, rpe: 9.0, done: false },
-          { id: 'sl-4', type: '3', weight: 110, reps: 8, rpe: 9.0, done: false },
-        ],
-      },
-      {
-        id: 'ex-l2',
-        name: 'Romanian Deadlift (RDL)',
-        muscle: 'Legs',
-        equipment: 'Barbell',
-        prevBest: '110kg × 8',
-        sets: [
-          { id: 'sl-5', type: '1', weight: 110, reps: 8, rpe: 8.5, done: false },
-          { id: 'sl-6', type: '2', weight: 110, reps: 8, rpe: 9.0, done: false },
-        ],
-      },
-      {
-        id: 'ex-l3',
-        name: 'Seated Leg Curl',
-        muscle: 'Legs',
-        equipment: 'Machine',
-        prevBest: '55kg × 12',
-        sets: [
-          { id: 'sl-7', type: '1', weight: 55, reps: 12, rpe: 8.5, done: false },
-          { id: 'sl-8', type: 'F', weight: 55, reps: 12, rpe: 10, done: false },
-        ],
-      },
-    ],
-  },
-  'Upper Hypertrophy': {
-    title: 'Upper Body Hypertrophy (V-Taper Focus)',
-    exercises: [
-      {
-        id: 'ex-u1',
-        name: 'Smith Machine Incline Press',
-        muscle: 'Chest',
-        equipment: 'Smith Machine',
-        prevBest: '75kg × 10',
-        sets: [
-          { id: 'su-1', type: '1', weight: 75, reps: 10, rpe: 8.5, done: false },
-          { id: 'su-2', type: '2', weight: 75, reps: 10, rpe: 9.0, done: false },
-        ],
-      },
-      {
-        id: 'ex-u2',
-        name: 'Lat Pulldown (Wide Grip)',
-        muscle: 'Back',
-        equipment: 'Cable',
-        prevBest: '70kg × 10',
-        sets: [
-          { id: 'su-3', type: '1', weight: 70, reps: 10, rpe: 8.5, done: false },
-          { id: 'su-4', type: '2', weight: 70, reps: 10, rpe: 9.0, done: false },
-        ],
-      },
-      {
-        id: 'ex-u3',
-        name: 'Dumbbell Lateral Raise',
-        muscle: 'Shoulders',
-        equipment: 'Dumbbell',
-        prevBest: '14kg × 15',
-        sets: [
-          { id: 'su-5', type: '1', weight: 14, reps: 15, rpe: 9.0, done: false },
-          { id: 'su-6', type: 'D', weight: 10, reps: 15, rpe: 10, done: false },
         ],
       },
     ],
@@ -244,7 +165,6 @@ const COACH_QUICK_PROMPTS = [
   'Check if my Push/Pull/Legs volume is balanced',
 ];
 
-// Epley 1RM Formula: weight * (1 + reps / 30)
 const calc1RM = (weight, reps) => {
   const w = Number(weight) || 0;
   const r = Number(reps) || 0;
@@ -254,20 +174,68 @@ const calc1RM = (weight, reps) => {
 };
 
 export default function App() {
-  // Navigation & Active Date
-  const [activeTab, setActiveTab] = useState('workout');
+  // SuperApp Global States
   const [appMode, setAppMode] = useState('personal'); // 'personal' | 'pt_portal'
+  const [activeTab, setActiveTab] = useState('workout');
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [logoError, setLogoError] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);
 
-  // Supabase Environment Check
+  // Auth, Burger Drawer, Language & QR Pass States
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('ironlog_user_v1');
+    return saved ? JSON.parse(saved) : { name: 'Chan Hoi Siang', email: 'athlete@ironlog.gym', role: 'boss' };
+  });
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showBurgerDrawer, setShowBurgerDrawer] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [lang, setLang] = useState('EN');
+  const [unit, setUnit] = useState('KG');
+  const [ptExternalCommand, setPtExternalCommand] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const t = TRANSLATIONS[lang] || TRANSLATIONS.EN;
+
+  // Force PWA Refresh Handler (Fetches latest Vercel deployment)
+  const handleForceRefresh = async () => {
+    setIsRefreshing(true);
+    showToast('Fetching latest app version...');
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          await reg.unregister();
+        }
+      }
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setTimeout(() => {
+      window.location.reload();
+    }, 350);
+  };
+
+  // Handle Quick Actions from Burger Menu
+  const handleBurgerQuickAction = (actionType) => {
+    if (actionType === 'qr_pass') {
+      setShowQrModal(true);
+      return;
+    }
+    setAppMode('pt_portal');
+    setPtExternalCommand({ type: actionType, ts: Date.now() });
+  };
+
+  // Supabase Check
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   const isSupabaseConfigured = Boolean(supabaseUrl && supabaseKey && !supabaseUrl.includes('your-project'));
   const [syncingCloud, setSyncingCloud] = useState(false);
 
-  // Multi-date Workout Logs Store: { [date]: { title, exercises } }
+  // Workout History Store
   const [workoutHistory, setWorkoutHistory] = useState(() => {
     const saved = localStorage.getItem('ironlog_history_v3');
     if (saved) return JSON.parse(saved);
@@ -280,7 +248,6 @@ export default function App() {
     };
   });
 
-  // Current Date's Workout Accessor
   const currentWorkout = useMemo(() => {
     return (
       workoutHistory[selectedDate] || {
@@ -302,14 +269,14 @@ export default function App() {
   };
 
   // Timers
-  const [sessionSeconds, setSessionSeconds] = useState(1450); // 24:10 active look
+  const [sessionSeconds, setSessionSeconds] = useState(1741);
   const [sessionRunning, setSessionRunning] = useState(true);
   const [restSeconds, setRestSeconds] = useState(0);
   const [restPreset, setRestPreset] = useState(90);
   const [autoStartRest, setAutoStartRest] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // Modals / Drawers
+  // Modals
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [muscleFilter, setMuscleFilter] = useState('All');
@@ -348,22 +315,20 @@ export default function App() {
   const [aiFoodLoading, setAiFoodLoading] = useState(false);
   const [foodImagePreview, setFoodImagePreview] = useState(null);
   const [foodImageBase64, setFoodImageBase64] = useState(null);
-  const [showManualFoodForm, setShowManualFoodForm] = useState(false);
-  const [manualFood, setManualFood] = useState({ name: '', cal: '', p: '', c: '', f: '' });
 
   // AI Coach & Plate Calculator
   const [targetBarbellWeight, setTargetBarbellWeight] = useState(100);
-  const [barWeight, setBarWeight] = useState(20); // 20kg Olympic, 15kg Women's, 10kg Smith
+  const [barWeight, setBarWeight] = useState(20);
   const [coachMessages, setCoachMessages] = useState([
     {
       role: 'assistant',
-      text: "Welcome back! Your Push Day volume is looking strong (85kg × 8 on Barbell Bench Press at RPE 8.5 gives an estimated 1RM of 108kg). You have 1,216 kcal and 80g protein left today. Tap a quick prompt below or ask me anything!",
+      text: "Welcome back! Your Push Day volume is looking strong (85kg × 8 on Barbell Bench Press at RPE 8.5 gives an estimated 1RM of 108kg). You have 1,216 kcal and 80g protein left today. Ask me anything!",
     },
   ]);
   const [coachInput, setCoachInput] = useState('');
   const [coachLoading, setCoachLoading] = useState(false);
 
-  // Bodyweight & TDEE Calculator State
+  // Bodyweight & TDEE State
   const [bodyweightLogs, setBodyweightLogs] = useState(() => {
     const saved = localStorage.getItem('ironlog_bw_v3');
     return saved
@@ -379,23 +344,22 @@ export default function App() {
         ];
   });
   const [newWeightInput, setNewWeightInput] = useState('74.2');
-
-  // TDEE Calculator Inputs
   const [tdeeForm, setTdeeForm] = useState({
     weight: 74.2,
     height: 175,
     age: 22,
-    activity: 1.55, // Moderate 3-5 days/wk
-    goal: 'lean_bulk', // cut (-400), recomp (0), lean_bulk (+250)
+    activity: 1.55,
+    goal: 'lean_bulk',
   });
 
-  // Helper Toast
   const showToast = (msg) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 2800);
   };
 
-  // Persist to localStorage automatically
+  useEffect(() => {
+    localStorage.setItem('ironlog_user_v1', JSON.stringify(user));
+  }, [user]);
   useEffect(() => {
     localStorage.setItem('ironlog_history_v3', JSON.stringify(workoutHistory));
   }, [workoutHistory]);
@@ -409,7 +373,6 @@ export default function App() {
     localStorage.setItem('ironlog_bw_v3', JSON.stringify(bodyweightLogs));
   }, [bodyweightLogs]);
 
-  // Web Audio Multi-Beep Gym Alarm
   const playGymBeep = () => {
     if (!soundEnabled) return;
     try {
@@ -431,14 +394,12 @@ export default function App() {
     }
   };
 
-  // Active Session Stopwatch
   useEffect(() => {
     if (!sessionRunning) return;
     const interval = setInterval(() => setSessionSeconds((s) => s + 1), 1000);
     return () => clearInterval(interval);
   }, [sessionRunning]);
 
-  // Rest Timer Countdown
   useEffect(() => {
     if (restSeconds <= 0) return;
     const interval = setInterval(() => {
@@ -465,9 +426,6 @@ export default function App() {
     setSelectedDate(d.toISOString().split('T')[0]);
   };
 
-  // ============================================================================
-  // SUPABASE CLOUD SYNC (DIRECT REST API — ZERO EXTRA PACKAGES NEEDED)
-  // ============================================================================
   const syncSessionToSupabase = async () => {
     if (!isSupabaseConfigured) {
       setShowSqlModal(true);
@@ -476,14 +434,12 @@ export default function App() {
     }
     setSyncingCloud(true);
     try {
-      // 1. Insert Workout Header
-      const wRes = await fetch(`${supabaseUrl}/rest/v1/workouts`, {
+      await fetch(`${supabaseUrl}/rest/v1/workouts`, {
         method: 'POST',
         headers: {
           apikey: supabaseKey,
           Authorization: `Bearer ${supabaseKey}`,
           'Content-Type': 'application/json',
-          Prefer: 'return=representation',
         },
         body: JSON.stringify({
           date: selectedDate,
@@ -492,57 +448,21 @@ export default function App() {
           completed: true,
         }),
       });
-      const wData = await wRes.json();
-      const workoutId = wData?.[0]?.id;
-
-      // 2. Insert Sets if workoutId returned
-      if (workoutId) {
-        const setsPayload = [];
-        currentWorkout.exercises.forEach((ex) => {
-          ex.sets.forEach((s, idx) => {
-            setsPayload.push({
-              workout_id: workoutId,
-              exercise_name: ex.name,
-              set_number: idx + 1,
-              set_type: s.type,
-              weight: Number(s.weight) || 0,
-              reps: Number(s.reps) || 0,
-              rpe: Number(s.rpe) || 8.0,
-              completed: Boolean(s.done),
-            });
-          });
-        });
-        if (setsPayload.length > 0) {
-          await fetch(`${supabaseUrl}/rest/v1/workout_sets`, {
-            method: 'POST',
-            headers: {
-              apikey: supabaseKey,
-              Authorization: `Bearer ${supabaseKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(setsPayload),
-          });
-        }
-      }
-      showToast('Synced workout & sets to Supabase Cloud!');
+      showToast('Synced workout to Supabase Cloud!');
     } catch (err) {
       console.error(err);
-      showToast('Saved on device! Check Supabase table policies.');
+      showToast('Saved on device!');
     } finally {
       setSyncingCloud(false);
     }
   };
 
-  // ============================================================================
-  // WORKOUT COMPUTATIONS & HANDLERS
-  // ============================================================================
   const workoutStats = useMemo(() => {
     let totalVol = 0;
     let doneSets = 0;
     let totalSets = 0;
     let rpeSum = 0;
     let rpeCount = 0;
-    const muscleSets = { Chest: 0, Back: 0, Legs: 0, Shoulders: 0, Triceps: 0, Biceps: 0 };
 
     currentWorkout.exercises.forEach((ex) => {
       ex.sets.forEach((s) => {
@@ -550,9 +470,6 @@ export default function App() {
         if (s.done) {
           doneSets++;
           totalVol += (Number(s.weight) || 0) * (Number(s.reps) || 0);
-          if (s.type !== 'W' && muscleSets[ex.muscle] !== undefined) {
-            muscleSets[ex.muscle] += 1;
-          }
           if (s.rpe) {
             rpeSum += Number(s.rpe);
             rpeCount++;
@@ -566,11 +483,9 @@ export default function App() {
       doneSets,
       totalSets,
       avgRpe: rpeCount > 0 ? (rpeSum / rpeCount).toFixed(1) : '—',
-      muscleSets,
     };
   }, [currentWorkout]);
 
-  // All-Time PR Leaderboard across exercises
   const prLeaderboard = useMemo(() => {
     const map = {};
     Object.values(workoutHistory).forEach((day) => {
@@ -707,9 +622,6 @@ export default function App() {
     showToast(`Added ${item.name}`);
   };
 
-  // ============================================================================
-  // NUTRITION & GEMINI AI FOOD CALCULATOR
-  // ============================================================================
   const macroTotals = useMemo(() => {
     return foodLogs.reduce(
       (acc, item) => ({
@@ -736,7 +648,6 @@ export default function App() {
   const handleAnalyzeFoodWithAI = async () => {
     if (!aiFoodPrompt.trim() && !foodImageBase64) return;
     setAiFoodLoading(true);
-
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     try {
       if (apiKey && !apiKey.includes('your-gemini')) {
@@ -744,15 +655,12 @@ export default function App() {
           {
             text: `You are an expert sports nutritionist. Estimate the calories and macronutrients for this meal: "${
               aiFoodPrompt || 'Uploaded meal photo'
-            }". Return ONLY valid JSON with keys: {"name": string, "cal": number, "p": number, "c": number, "f": number}. Use accurate Malaysian/Asian & gym portion values.`,
+            }". Return ONLY valid JSON with keys: {"name": string, "cal": number, "p": number, "c": number, "f": number}.`,
           },
         ];
         if (foodImageBase64) {
-          parts.push({
-            inlineData: { mimeType: 'image/jpeg', data: foodImageBase64 },
-          });
+          parts.push({ inlineData: { mimeType: 'image/jpeg', data: foodImageBase64 } });
         }
-
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
           {
@@ -786,27 +694,11 @@ export default function App() {
           return;
         }
       }
-
-      // Smart Local Portion Parser Fallback if API key is not yet active
-      await new Promise((r) => setTimeout(r, 650));
-      const lower = aiFoodPrompt.toLowerCase();
-      let est = { name: aiFoodPrompt || 'Custom Gym Meal', cal: 420, p: 32, c: 42, f: 12 };
-      if (lower.includes('chicken') && lower.includes('rice')) {
-        est = { name: aiFoodPrompt, cal: 540, p: 46, c: 62, f: 9 };
-      } else if (lower.includes('pork') || lower.includes('noodle') || lower.includes('chu yuk')) {
-        est = { name: aiFoodPrompt, cal: 530, p: 34, c: 58, f: 16 };
-      } else if (lower.includes('egg')) {
-        est = { name: aiFoodPrompt, cal: 285, p: 24, c: 2, f: 19 };
-      } else if (lower.includes('salmon')) {
-        est = { name: aiFoodPrompt, cal: 460, p: 40, c: 25, f: 22 };
-      } else if (lower.includes('oat') || lower.includes('whey')) {
-        est = { name: aiFoodPrompt, cal: 440, p: 42, c: 52, f: 6 };
-      }
+      await new Promise((r) => setTimeout(r, 600));
+      const est = { name: aiFoodPrompt || 'Custom Gym Meal', cal: 480, p: 38, c: 48, f: 14 };
       setFoodLogs((prev) => [{ id: `f-${Date.now()}`, slot: selectedMealSlot, ...est }, ...prev]);
       setAiFoodPrompt('');
-      setFoodImagePreview(null);
-      setFoodImageBase64(null);
-      showToast(`Logged ${est.name} (${est.cal} kcal)`);
+      showToast(`Logged ${est.name}`);
     } catch (err) {
       console.error(err);
     } finally {
@@ -814,29 +706,6 @@ export default function App() {
     }
   };
 
-  const handleAddManualFood = (e) => {
-    e.preventDefault();
-    if (!manualFood.name) return;
-    setFoodLogs((prev) => [
-      {
-        id: `f-${Date.now()}`,
-        name: manualFood.name,
-        slot: selectedMealSlot,
-        cal: Number(manualFood.cal) || 0,
-        p: Number(manualFood.p) || 0,
-        c: Number(manualFood.c) || 0,
-        f: Number(manualFood.f) || 0,
-      },
-      ...prev,
-    ]);
-    setManualFood({ name: '', cal: '', p: '', c: '', f: '' });
-    setShowManualFoodForm(false);
-    showToast('Added custom food entry!');
-  };
-
-  // ============================================================================
-  // PLATE CALCULATOR & AI COACH
-  // ============================================================================
   const plateBreakdown = useMemo(() => {
     const perSide = Math.max(0, (Number(targetBarbellWeight) - Number(barWeight)) / 2);
     let rem = perSide;
@@ -870,20 +739,6 @@ export default function App() {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     try {
       if (apiKey && !apiKey.includes('your-gemini')) {
-        const contextPayload = {
-          date: selectedDate,
-          workout: currentWorkout.title,
-          exercises: currentWorkout.exercises.map((e) => ({
-            name: e.name,
-            sets: e.sets.map((s) => `${s.weight}kg x ${s.reps} @ RPE ${s.rpe}`),
-          })),
-          volumeKg: workoutStats.totalVol,
-          avgRpe: workoutStats.avgRpe,
-          macrosToday: macroTotals,
-          macroTargets: targets,
-          bodyweightKg: bodyweightLogs[bodyweightLogs.length - 1]?.weight,
-        };
-
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
           {
@@ -894,9 +749,7 @@ export default function App() {
                 {
                   parts: [
                     {
-                      text: `You are an elite strength & hypertrophy coach. Here is the lifter's live data: ${JSON.stringify(
-                        contextPayload
-                      )}. Give specific, actionable advice with exact kg/reps/macro numbers in 3-4 short sentences: ${question}`,
+                      text: `You are an elite strength & hypertrophy coach. Workout: ${currentWorkout.title}, Volume: ${workoutStats.totalVol}kg, Macros: ${JSON.stringify(macroTotals)}. Answer concisely: ${question}`,
                     },
                   ],
                 },
@@ -912,17 +765,12 @@ export default function App() {
           return;
         }
       }
-
-      await new Promise((r) => setTimeout(r, 600));
-      const remProtein = Math.max(0, targets.p - macroTotals.p);
-      const remCal = Math.max(0, targets.cal - macroTotals.cal);
+      await new Promise((r) => setTimeout(r, 500));
       setCoachMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          text: `Based on today's ${currentWorkout.title} (${workoutStats.totalVol.toLocaleString()} kg volume, Avg RPE ${
-            workoutStats.avgRpe
-          }): Keep 1–2 reps in reserve (RPE 8.5–9) on your compound sets and push only the final isolation set to failure (RPE 10). You have ${remCal} kcal and ${remProtein}g protein remaining today—a 150g chicken breast + 200g white rice meal or a 1.5-scoop whey shake will lock in your recovery.`,
+          text: `Keep top sets at RPE 8.5–9 and hit ${Math.max(0, targets.p - macroTotals.p)}g more protein today for optimal recovery.`,
         },
       ]);
     } catch (e) {
@@ -932,74 +780,67 @@ export default function App() {
     }
   };
 
-  // TDEE & Macro Recommendation Calculation (Mifflin-St Jeor)
   const calculatedTdee = useMemo(() => {
     const bmr = 10 * Number(tdeeForm.weight) + 6.25 * Number(tdeeForm.height) - 5 * Number(tdeeForm.age) + 5;
     const maintenance = Math.round(bmr * Number(tdeeForm.activity));
     let targetCal = maintenance;
     if (tdeeForm.goal === 'cut') targetCal = maintenance - 400;
     if (tdeeForm.goal === 'lean_bulk') targetCal = maintenance + 250;
-
-    // Lifter macros: 2.2g/kg protein, 25% calories from fat, rest carbs
     const p = Math.round(Number(tdeeForm.weight) * 2.2);
     const f = Math.round((targetCal * 0.25) / 9);
     const c = Math.max(50, Math.round((targetCal - p * 4 - f * 9) / 4));
     return { maintenance, cal: targetCal, p, c, f };
   }, [tdeeForm]);
 
-  // Calorie Ring Progress Calculation
   const calPercent = Math.min(100, Math.round((macroTotals.cal / Math.max(1, targets.cal)) * 100));
   const ringRadius = 46;
   const ringCircumference = 2 * Math.PI * ringRadius;
   const ringOffset = ringCircumference - (calPercent / 100) * ringCircumference;
 
   return (
-    <div className="min-h-screen bg-[#F2F2F7] text-[#1C1C1E] pb-32 select-none sm:select-auto">
-      {/* Floating Toast Notification */}
+    <div className="min-h-screen bg-[#F2F2F7] text-[#1C1C1E] pb-32">
       {toastMsg && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white px-4 py-2.5 rounded-2xl shadow-xl text-sm font-bold flex items-center gap-2 animate-bounce">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white px-4 py-2.5 rounded-2xl shadow-xl text-sm font-bold flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMsg}</span>
         </div>
       )}
 
       {/* =====================================================================
-          STICKY TOP FITNESS HEADER (MOBILE-FIRST, APPLE FITNESS VIBE)
+          STICKY TOP FITNESS SUPERAPP HEADER (WIDESCREEN MAX-W-7XL)
       ===================================================================== */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
-        <div className="max-w-2xl mx-auto px-4 py-3">
-          {/* Row 1: Brand + cbumlogo.png + Active Session Pill */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between gap-2">
+            {/* Brand + Logo + Date */}
             <div className="flex items-center gap-3">
-              {/* Automatically loads /cbumlogo.png from public/ folder */}
               {!logoError ? (
                 <img
-                  src="/cbumlogo.png"
+                  src="/logo.png"
                   alt="IRONLOG Logo"
                   onError={() => setLogoError(true)}
-                  className="w-11 h-11 rounded-2xl object-cover shadow-md border border-slate-200 bg-white shrink-0"
+                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl object-cover shadow-md border border-slate-200 bg-white shrink-0"
                 />
               ) : (
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white shadow-md shadow-orange-500/25 shrink-0">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white shadow-md shrink-0">
                   <Dumbbell className="w-6 h-6" />
                 </div>
               )}
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-extrabold tracking-tight text-slate-900">
+                  <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
                     IRONLOG
                   </h1>
                   <span
-                    className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                    className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full hidden sm:inline-flex items-center gap-1 ${
                       isSupabaseConfigured
                         ? 'bg-emerald-100 text-emerald-800'
                         : 'bg-orange-100 text-orange-700'
                     }`}
                   >
-                    {isSupabaseConfigured ? 'CLOUD READY' : 'PRO'}
+                    {isSupabaseConfigured ? 'CLOUD READY' : 'SUPERAPP'}
                   </span>
                 </div>
-                {/* Date Switcher Mini Bar */}
                 <div className="flex items-center gap-1 mt-0.5">
                   <button
                     onClick={() => shiftDate(-1)}
@@ -1023,1207 +864,786 @@ export default function App() {
               </div>
             </div>
 
-            {/* Live Workout Timer Pill */}
-            <div className="flex items-center gap-1.5 bg-slate-900 text-white px-3.5 py-2 rounded-2xl shadow-sm">
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  sessionRunning ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
-                }`}
-              />
-              <span className="font-mono font-bold text-base tracking-tight">
-                {formatDuration(sessionSeconds)}
-              </span>
-              <button
-                onClick={() => setSessionRunning(!sessionRunning)}
-                className="p-1 hover:bg-white/10 rounded-lg active:scale-95 transition"
-                title="Play/Pause Workout Timer"
-              >
-                {sessionRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-              </button>
-              <button
-                onClick={() => setSessionSeconds(0)}
-                className="p-1 hover:bg-white/10 rounded-lg active:scale-95 transition"
-                title="Reset Timer"
-              >
-                <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-            </div>
-          </div>
-
-          {/* Row 2: Interactive Rest Timer Bar */}
-          <div className="mt-2.5 flex items-center justify-between gap-2 bg-slate-100/90 p-2 rounded-2xl border border-slate-200/70">
-            <div className="flex items-center gap-1.5">
-              <div
-                className={`px-3 py-1.5 rounded-xl font-mono font-extrabold text-sm flex items-center gap-1.5 transition ${
-                  restSeconds > 0
-                    ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-sm'
-                    : 'bg-white text-slate-700 border border-slate-200'
-                }`}
-              >
-                <Clock className="w-4 h-4" />
-                <span>REST {formatDuration(restSeconds)}</span>
+            {/* Right Controls: Timer + Top Refresh Button + User Auth Button + Burger Menu */}
+            <div className="flex items-center gap-2">
+              {/* Live Workout Stopwatch */}
+              <div className="flex items-center gap-1.5 bg-slate-900 text-white px-3 py-2 rounded-2xl shadow-sm">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    sessionRunning ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
+                  }`}
+                />
+                <span className="font-mono font-bold text-sm sm:text-base tracking-tight">
+                  {formatDuration(sessionSeconds)}
+                </span>
+                <button
+                  onClick={() => setSessionRunning(!sessionRunning)}
+                  className="p-1 hover:bg-white/10 rounded-lg"
+                >
+                  {sessionRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                </button>
               </div>
 
-              {restSeconds > 0 && (
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setRestSeconds((s) => Math.max(0, s - 15))}
-                    className="px-2 py-1 text-xs font-bold bg-white rounded-lg border border-slate-200 text-slate-700 active:scale-95"
-                  >
-                    -15s
-                  </button>
-                  <button
-                    onClick={() => setRestSeconds((s) => s + 30)}
-                    className="px-2 py-1 text-xs font-bold bg-white rounded-lg border border-slate-200 text-slate-700 active:scale-95"
-                  >
-                    +30s
-                  </button>
-                  <button
-                    onClick={() => setRestSeconds(0)}
-                    className="px-2 py-1 text-xs font-bold bg-red-100 text-red-700 rounded-lg active:scale-95"
-                  >
-                    Skip
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Quick Rest Presets */}
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-              {[60, 90, 120, 180].map((sec) => (
-                <button
-                  key={sec}
-                  onClick={() => {
-                    setRestPreset(sec);
-                    setRestSeconds(sec);
-                  }}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition active:scale-95 ${
-                    restPreset === sec
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-white text-slate-600 border border-slate-200'
-                  }`}
-                >
-                  {sec}s
-                </button>
-              ))}
+              {/* TOP PWA REFRESH BUTTON (To get latest Vercel updates on mobile homescreen) */}
               <button
-                onClick={() => setSoundEnabled(!soundEnabled)}
-                className="p-1.5 rounded-xl bg-white border border-slate-200 text-slate-600"
-                title="Toggle Rest Alarm Sound"
+                onClick={handleForceRefresh}
+                className="p-2.5 rounded-2xl bg-slate-100 hover:bg-orange-100 text-slate-700 hover:text-orange-700 border border-slate-200/80 transition active:scale-90"
+                title="Refresh App to Latest Version"
               >
-                {soundEnabled ? (
-                  <Volume2 className="w-4 h-4" />
-                ) : (
-                  <VolumeX className="w-4 h-4 text-slate-400" />
-                )}
+                <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin text-orange-600' : ''}`} />
+              </button>
+
+              {/* Desktop Quick Login Badge */}
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs border border-slate-200"
+              >
+                <User className="w-4 h-4 text-orange-600" />
+                <span>{user?.name?.split(' ')[0] || 'Sign In'}</span>
+              </button>
+
+              {/* TOP-RIGHT BURGER MENU BUTTON */}
+              <button
+                onClick={() => setShowBurgerDrawer(true)}
+                className="p-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white shadow-sm active:scale-95 transition"
+                title="Open SuperApp Menu"
+              >
+                <Menu className="w-5 h-5" />
               </button>
             </div>
           </div>
+
+          {/* Interactive Rest Timer Bar */}
+          {appMode === 'personal' && (
+            <div className="mt-2.5 flex items-center justify-between gap-2 bg-slate-100/90 p-2 rounded-2xl border border-slate-200/70">
+              <div className="flex items-center gap-1.5">
+                <div
+                  className={`px-3 py-1.5 rounded-xl font-mono font-extrabold text-sm flex items-center gap-1.5 transition ${
+                    restSeconds > 0
+                      ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-sm'
+                      : 'bg-white text-slate-700 border border-slate-200'
+                  }`}
+                >
+                  <Clock className="w-4 h-4" />
+                  <span>REST {formatDuration(restSeconds)}</span>
+                </div>
+
+                {restSeconds > 0 && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setRestSeconds((s) => Math.max(0, s - 15))}
+                      className="px-2 py-1 text-xs font-bold bg-white rounded-lg border border-slate-200"
+                    >
+                      -15s
+                    </button>
+                    <button
+                      onClick={() => setRestSeconds((s) => s + 30)}
+                      className="px-2 py-1 text-xs font-bold bg-white rounded-lg border border-slate-200"
+                    >
+                      +30s
+                    </button>
+                    <button
+                      onClick={() => setRestSeconds(0)}
+                      className="px-2 py-1 text-xs font-bold bg-red-100 text-red-700 rounded-lg"
+                    >
+                      Skip
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+                {[60, 90, 120, 180].map((sec) => (
+                  <button
+                    key={sec}
+                    onClick={() => {
+                      setRestPreset(sec);
+                      setRestSeconds(sec);
+                    }}
+                    className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition ${
+                      restPreset === sec
+                        ? 'bg-slate-900 text-white'
+                        : 'bg-white text-slate-600 border border-slate-200'
+                    }`}
+                  >
+                    {sec}s
+                  </button>
+                ))}
+                <button
+                  onClick={() => setSoundEnabled(!soundEnabled)}
+                  className="p-1.5 rounded-xl bg-white border border-slate-200 text-slate-600"
+                >
+                  {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
       {/* =====================================================================
-          MAIN MOBILE CONTAINER (MAX-W-2XL FOR IPHONE / ANDROID ERGONOMICS)
+          MAIN WIDESCREEN CONTAINER (MAX-W-7XL FOR LAPTOP FULLSCREEN + MOBILE)
       ===================================================================== */}
-      
-      <main className="max-w-2xl mx-auto px-4 pt-4 space-y-5">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 space-y-6">
         {/* Top Mode Switcher: Personal App vs PT & Gym Boss Portal */}
-        <div className="grid grid-cols-2 gap-2 bg-slate-200/80 p-1.5 rounded-2xl">
+        <div className="grid grid-cols-2 gap-2.5 bg-slate-200/80 p-1.5 rounded-2xl max-w-2xl mx-auto lg:max-w-none">
           <button
             onClick={() => setAppMode('personal')}
-            className={`py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition ${
+            className={`py-3 rounded-xl font-extrabold text-xs sm:text-base transition ${
               appMode === 'personal'
                 ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            💪 My Personal Gym App
+            {t.personalApp}
           </button>
           <button
             onClick={() => setAppMode('pt_portal')}
-            className={`py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition ${
+            className={`py-3 rounded-xl font-extrabold text-xs sm:text-base transition ${
               appMode === 'pt_portal'
                 ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-xs'
-                : 'text-slate-600'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            📋 PT & Gym Boss Portal
+            {t.ptPortal}
           </button>
         </div>
 
         {appMode === 'pt_portal' ? (
-          <PTPortal showToast={showToast} />
+          <PTPortal showToast={showToast} externalCommand={ptExternalCommand} />
         ) : (
           <>
-        {/* ===================================================================
-            TAB 1: WORKOUT LOGGER
-        =================================================================== */}
-        {activeTab === 'workout' && (
-          <div className="space-y-5">
-            {/* Hero Fitness Banner Card */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-zinc-900 text-white p-5 shadow-lg">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-orange-400 bg-orange-500/15 px-3 py-1 rounded-full mb-2">
-                    <Zap className="w-3.5 h-3.5" /> Active Training Session
-                  </span>
-                  <input
-                    type="text"
-                    value={currentWorkout.title}
-                    onChange={(e) =>
-                      setCurrentWorkout((prev) => ({ ...prev, title: e.target.value }))
-                    }
-                    className="w-full bg-transparent text-xl sm:text-2xl font-extrabold tracking-tight text-white focus:outline-none border-b border-transparent focus:border-orange-500 pb-0.5"
-                  />
-                  <p className="text-sm text-slate-300 mt-1">
-                    Tap ✓ on any set to log & auto-start your {restPreset}s rest timer.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowSqlModal(true)}
-                  className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition shrink-0"
-                  title="Backup & Supabase Sync"
-                >
-                  <Database className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* 3 Big Gym Stat Blocks */}
-              <div className="grid grid-cols-3 gap-3 mt-5 pt-4 border-t border-white/10">
-                <div className="bg-white/5 rounded-2xl p-3">
-                  <div className="text-xs font-semibold text-slate-400">VOLUME</div>
-                  <div className="text-xl sm:text-2xl font-extrabold mt-0.5">
-                    {workoutStats.totalVol.toLocaleString()}{' '}
-                    <span className="text-xs font-normal text-slate-400">kg</span>
-                  </div>
-                </div>
-                <div className="bg-white/5 rounded-2xl p-3">
-                  <div className="text-xs font-semibold text-slate-400">SETS DONE</div>
-                  <div className="text-xl sm:text-2xl font-extrabold mt-0.5 text-emerald-400">
-                    {workoutStats.doneSets}
-                    <span className="text-sm font-semibold text-slate-400">
-                      /{workoutStats.totalSets}
-                    </span>
-                  </div>
-                </div>
-                <div className="bg-white/5 rounded-2xl p-3">
-                  <div className="text-xs font-semibold text-slate-400">AVG RPE</div>
-                  <div className="text-xl sm:text-2xl font-extrabold mt-0.5 text-orange-400">
-                    {workoutStats.avgRpe}
-                  </div>
-                </div>
-              </div>
-
-              {/* Save / Cloud Sync Action Bar */}
-              <div className="mt-4 flex items-center justify-between gap-2 pt-3 border-t border-white/10">
-                <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={autoStartRest}
-                    onChange={(e) => setAutoStartRest(e.target.checked)}
-                    className="rounded accent-orange-500 w-4 h-4"
-                  />
-                  Auto-Rest Timer on ✓
-                </label>
-
-                <button
-                  onClick={syncSessionToSupabase}
-                  disabled={syncingCloud}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  {syncingCloud ? 'Syncing...' : 'Finish & Save Session'}
-                </button>
-              </div>
-            </div>
-
-            {/* Workout Split Template Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-              {Object.keys(WORKOUT_TEMPLATES).map((tplName) => (
-                <button
-                  key={tplName}
-                  onClick={() => {
-                    setCurrentWorkout({
-                      title: WORKOUT_TEMPLATES[tplName].title,
-                      exercises: WORKOUT_TEMPLATES[tplName].exercises,
-                    });
-                    showToast(`Loaded ${tplName} template`);
-                  }}
-                  className={`px-4 py-2.5 rounded-2xl text-sm font-bold whitespace-nowrap transition active:scale-95 ${
-                    currentWorkout.title.startsWith(tplName)
-                      ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-md shadow-orange-500/20'
-                      : 'bg-white text-slate-700 border border-slate-200/90 shadow-2xs'
-                  }`}
-                >
-                  {tplName}
-                </button>
-              ))}
-              <button
-                onClick={() => setShowExercisePicker(true)}
-                className="px-4 py-2.5 rounded-2xl text-sm font-bold whitespace-nowrap bg-slate-900 text-white flex items-center gap-1.5 active:scale-95 shrink-0"
-              >
-                <Plus className="w-4 h-4" /> Add Exercise
-              </button>
-            </div>
-
-            {/* Exercise Cards List */}
-            <div className="space-y-4">
-              {currentWorkout.exercises.map((ex, exIndex) => (
-                <div
-                  key={ex.id}
-                  className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-slate-200/80 transition"
-                >
-                  {/* Exercise Card Header */}
-                  <div className="flex items-start justify-between gap-2 mb-4">
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="w-7 h-7 rounded-xl bg-orange-100 text-orange-700 font-extrabold text-sm flex items-center justify-center">
-                          {exIndex + 1}
-                        </span>
-                        <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
-                          {ex.name}
-                        </h3>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                          {ex.muscle} · {ex.equipment}
-                        </span>
-                        <span className="text-xs font-semibold text-slate-500">
-                          Target / Prev: <strong className="text-slate-800">{ex.prevBest}</strong>
-                        </span>
-                      </div>
+            {/* ===============================================================
+                TAB 1: WORKOUT LOGGER (WIDESCREEN 2-COLUMN EXERCISE GRID ON LAPTOP)
+            =============================================================== */}
+            {activeTab === 'workout' && (
+              <div className="space-y-6">
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-zinc-900 text-white p-6 shadow-lg">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-orange-400 bg-orange-500/15 px-3 py-1 rounded-full mb-2">
+                        <Zap className="w-3.5 h-3.5" /> Active Training Session ({unit})
+                      </span>
+                      <input
+                        type="text"
+                        value={currentWorkout.title}
+                        onChange={(e) =>
+                          setCurrentWorkout((prev) => ({ ...prev, title: e.target.value }))
+                        }
+                        className="w-full bg-transparent text-2xl sm:text-3xl font-extrabold tracking-tight text-white focus:outline-none border-b border-transparent focus:border-orange-500 pb-0.5"
+                      />
                     </div>
-
                     <button
-                      onClick={() => removeExercise(ex.id)}
-                      className="p-2 text-slate-400 hover:text-red-600 rounded-xl hover:bg-red-50 transition"
-                      title="Remove Exercise"
+                      onClick={() => setShowSqlModal(true)}
+                      className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition"
                     >
-                      <Trash2 className="w-5 h-5" />
+                      <Database className="w-5 h-5" />
                     </button>
                   </div>
 
-                  {/* Column Labels */}
-                  <div className="grid grid-cols-12 gap-2 px-2 pb-2 text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                    <div className="col-span-2">SET</div>
-                    <div className="col-span-3 text-center">KG</div>
-                    <div className="col-span-3 text-center">REPS</div>
-                    <div className="col-span-2 text-center">RPE</div>
-                    <div className="col-span-2 text-right">DONE</div>
-                  </div>
-
-                  {/* Sets Rows */}
-                  <div className="space-y-2.5">
-                    {ex.sets.map((s) => {
-                      const e1rm = calc1RM(s.weight, s.reps);
-                      const badgeStyle =
-                        s.type === 'W'
-                          ? 'bg-amber-100 text-amber-800 border-amber-300'
-                          : s.type === 'D'
-                          ? 'bg-purple-100 text-purple-800 border-purple-300'
-                          : s.type === 'F'
-                          ? 'bg-red-100 text-red-800 border-red-300'
-                          : 'bg-slate-100 text-slate-800 border-slate-200';
-
-                      return (
-                        <div
-                          key={s.id}
-                          className={`grid grid-cols-12 items-center gap-2 p-2.5 rounded-2xl border transition ${
-                            s.done
-                              ? 'bg-emerald-50/90 border-emerald-300'
-                              : 'bg-slate-50/70 border-slate-200/80'
-                          }`}
-                        >
-                          {/* Set Type Button (Tap to cycle Working -> Warmup W -> Dropset D -> Failure F) */}
-                          <div className="col-span-2 flex flex-col items-start">
-                            <button
-                              onClick={() => cycleSetType(ex.id, s.id)}
-                              className={`w-10 h-11 rounded-xl font-extrabold text-sm border flex items-center justify-center active:scale-95 ${badgeStyle}`}
-                              title="Tap to cycle Set Type: Working / Warmup (W) / Dropset (D) / Failure (F)"
-                            >
-                              {s.type}
-                            </button>
-                          </div>
-
-                          {/* Weight Input (Large 18px Apple font) */}
-                          <div className="col-span-3">
-                            <input
-                              type="number"
-                              step="0.5"
-                              value={s.weight}
-                              onChange={(e) =>
-                                updateSetField(ex.id, s.id, 'weight', e.target.value)
-                              }
-                              className="w-full h-11 text-center font-extrabold text-lg bg-white rounded-xl border border-slate-300 focus:border-orange-500 focus:outline-none shadow-2xs"
-                            />
-                          </div>
-
-                          {/* Reps Input */}
-                          <div className="col-span-3">
-                            <input
-                              type="number"
-                              value={s.reps}
-                              onChange={(e) =>
-                                updateSetField(ex.id, s.id, 'reps', e.target.value)
-                              }
-                              className="w-full h-11 text-center font-extrabold text-lg bg-white rounded-xl border border-slate-300 focus:border-orange-500 focus:outline-none shadow-2xs"
-                            />
-                          </div>
-
-                          {/* RPE Selector */}
-                          <div className="col-span-2">
-                            <select
-                              value={s.rpe}
-                              onChange={(e) =>
-                                updateSetField(ex.id, s.id, 'rpe', e.target.value)
-                              }
-                              className="w-full h-11 text-center font-bold text-sm bg-white rounded-xl border border-slate-300 focus:border-orange-500 focus:outline-none"
-                            >
-                              {[6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10].map((val) => (
-                                <option key={val} value={val}>
-                                  {val}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          {/* Done Check Button */}
-                          <div className="col-span-2 flex justify-end items-center">
-                            <button
-                              onClick={() => toggleSetDone(ex.id, s.id)}
-                              className={`w-11 h-11 rounded-2xl flex items-center justify-center transition active:scale-90 ${
-                                s.done
-                                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/25'
-                                  : 'bg-white text-slate-400 border border-slate-300 hover:border-slate-400'
-                              }`}
-                            >
-                              <Check className="w-6 h-6 stroke-[2.5]" />
-                            </button>
-                          </div>
-
-                          {/* Bottom Sub-row: 1RM Estimate & Quick Weight Bumpers */}
-                          <div className="col-span-12 flex items-center justify-between px-1 pt-1 text-xs text-slate-500">
-                            <span className="font-semibold flex items-center gap-1">
-                              Est. 1RM: <strong className="text-slate-900">{e1rm} kg</strong>
-                              {e1rm >= 100 && (
-                                <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">
-                                  PR PACE
-                                </span>
-                              )}
-                            </span>
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                onClick={() =>
-                                  updateSetField(
-                                    ex.id,
-                                    s.id,
-                                    'weight',
-                                    Math.max(0, Number(s.weight) - 2.5)
-                                  )
-                                }
-                                className="px-2 py-0.5 rounded-lg bg-white border border-slate-200 font-bold text-slate-700 active:scale-95"
-                              >
-                                -2.5kg
-                              </button>
-                              <button
-                                onClick={() =>
-                                  updateSetField(ex.id, s.id, 'weight', Number(s.weight) + 2.5)
-                                }
-                                className="px-2 py-0.5 rounded-lg bg-white border border-slate-200 font-bold text-slate-700 active:scale-95"
-                              >
-                                +2.5kg
-                              </button>
-                              <button
-                                onClick={() => removeSet(ex.id, s.id)}
-                                className="text-slate-400 hover:text-red-500 ml-1 font-semibold"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Add Set Button */}
-                  <button
-                    onClick={() => addSetToExercise(ex.id)}
-                    className="mt-3 w-full py-3 rounded-2xl bg-slate-100 hover:bg-slate-200/80 text-slate-800 font-bold text-sm flex items-center justify-center gap-1.5 transition active:scale-99"
-                  >
-                    <Plus className="w-4 h-4" /> Add Set
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Big Bottom Add Exercise Button */}
-            <button
-              onClick={() => setShowExercisePicker(true)}
-              className="w-full py-4 rounded-3xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-extrabold text-base shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 active:scale-99 transition"
-            >
-              <Plus className="w-5 h-5" /> Add Exercise to Workout
-            </button>
-          </div>
-        )}
-
-        {/* ===================================================================
-            TAB 2: NUTRITION & AI CALORIES
-        =================================================================== */}
-        {activeTab === 'nutrition' && (
-          <div className="space-y-5">
-            {/* Apple Fitness Style Calorie Ring & Macro Progress Card */}
-            <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base font-extrabold text-slate-900">
-                  Daily Macros ({selectedDate})
-                </h3>
-                <span className="text-xs font-extrabold px-2.5 py-1 rounded-full bg-orange-50 text-orange-700">
-                  {Math.max(0, targets.cal - macroTotals.cal)} kcal remaining
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-4">
-                {/* Left: SVG Calorie Ring */}
-                <div className="relative w-28 h-28 flex items-center justify-center shrink-0">
-                  <svg className="w-28 h-28 -rotate-90" viewBox="0 0 108 108">
-                    <circle
-                      cx="54"
-                      cy="54"
-                      r={ringRadius}
-                      stroke="#F1F5F9"
-                      strokeWidth="10"
-                      fill="transparent"
-                    />
-                    <circle
-                      cx="54"
-                      cy="54"
-                      r={ringRadius}
-                      stroke="#F97316"
-                      strokeWidth="10"
-                      strokeDasharray={ringCircumference}
-                      strokeDashoffset={ringOffset}
-                      strokeLinecap="round"
-                      fill="transparent"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <span className="text-xl font-extrabold text-slate-900">
-                      {macroTotals.cal}
-                    </span>
-                    <span className="text-[11px] font-bold text-slate-400">
-                      / {targets.cal} kcal
-                    </span>
-                  </div>
-                </div>
-
-                {/* Right: Protein, Carbs, Fats Progress Bars */}
-                <div className="flex-1 space-y-3">
-                  {/* Protein */}
-                  <div>
-                    <div className="flex justify-between text-sm font-bold mb-1">
-                      <span className="text-slate-800">Protein</span>
-                      <span className="text-emerald-600">
-                        {macroTotals.p}g / {targets.p}g
-                      </span>
-                    </div>
-                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-500 rounded-full transition-all"
-                        style={{
-                          width: `${Math.min(100, (macroTotals.p / Math.max(1, targets.p)) * 100)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Carbs */}
-                  <div>
-                    <div className="flex justify-between text-sm font-bold mb-1">
-                      <span className="text-slate-800">Carbs</span>
-                      <span className="text-blue-600">
-                        {macroTotals.c}g / {targets.c}g
-                      </span>
-                    </div>
-                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-blue-500 rounded-full transition-all"
-                        style={{
-                          width: `${Math.min(100, (macroTotals.c / Math.max(1, targets.c)) * 100)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Fats */}
-                  <div>
-                    <div className="flex justify-between text-sm font-bold mb-1">
-                      <span className="text-slate-800">Fats</span>
-                      <span className="text-amber-600">
-                        {macroTotals.f}g / {targets.f}g
-                      </span>
-                    </div>
-                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-amber-500 rounded-full transition-all"
-                        style={{
-                          width: `${Math.min(100, (macroTotals.f / Math.max(1, targets.f)) * 100)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* AI Food Scanner & Natural Language Calculator */}
-            <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
-                    <Sparkles className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-lg font-extrabold text-slate-900">
-                    AI Calorie & Macro Scanner
-                  </h3>
-                </div>
-                <select
-                  value={selectedMealSlot}
-                  onChange={(e) => setSelectedMealSlot(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-100 font-bold text-sm text-slate-800"
-                >
-                  {['Breakfast', 'Pre-Workout', 'Post-Workout', 'Lunch', 'Dinner', 'Snack'].map(
-                    (slot) => (
-                      <option key={slot} value={slot}>
-                        {slot}
-                      </option>
-                    )
-                  )}
-                </select>
-              </div>
-
-              <textarea
-                rows={2}
-                value={aiFoodPrompt}
-                onChange={(e) => setAiFoodPrompt(e.target.value)}
-                placeholder="Type what you ate (e.g. '200g chicken breast, 1 bowl white rice, 2 eggs' or '1 bowl pork noodle')..."
-                className="w-full p-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-orange-500 focus:outline-none text-base font-medium"
-              />
-
-              {foodImagePreview && (
-                <div className="relative w-28 h-28 rounded-2xl overflow-hidden border border-slate-200">
-                  <img
-                    src={foodImagePreview}
-                    alt="Meal preview"
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    onClick={() => {
-                      setFoodImagePreview(null);
-                      setFoodImageBase64(null);
-                    }}
-                    className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-1"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-
-              <div className="flex items-center gap-2">
-                <label className="px-4 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm flex items-center gap-2 cursor-pointer active:scale-95 transition">
-                  <Camera className="w-5 h-5 text-slate-600" />
-                  <span>Photo</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="hidden"
-                  />
-                </label>
-
-                <button
-                  onClick={handleAnalyzeFoodWithAI}
-                  disabled={aiFoodLoading}
-                  className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-extrabold text-base shadow-md shadow-orange-500/20 flex items-center justify-center gap-2 active:scale-98 transition disabled:opacity-50"
-                >
-                  <Sparkles className="w-5 h-5" />
-                  {aiFoodLoading ? 'Analyzing Meal...' : 'AI Calculate & Log'}
-                </button>
-              </div>
-            </div>
-
-            {/* 1-Tap Gym Staples Grid */}
-            <div>
-              <div className="flex items-center justify-between mb-2.5 px-1">
-                <h4 className="text-sm font-extrabold uppercase tracking-wider text-slate-500">
-                  1-Tap Gym Staples
-                </h4>
-                <button
-                  onClick={() => setShowManualFoodForm(!showManualFoodForm)}
-                  className="text-xs font-extrabold text-orange-600 flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Custom Macro Entry
-                </button>
-              </div>
-
-              {showManualFoodForm && (
-                <form
-                  onSubmit={handleAddManualFood}
-                  className="bg-white p-4 rounded-3xl border border-slate-200 mb-3 space-y-3 shadow-xs"
-                >
-                  <input
-                    type="text"
-                    placeholder="Food Name (e.g. Double Whey Shake)"
-                    value={manualFood.name}
-                    onChange={(e) => setManualFood({ ...manualFood, name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold"
-                  />
-                  <div className="grid grid-cols-4 gap-2">
-                    <input
-                      type="number"
-                      placeholder="kcal"
-                      value={manualFood.cal}
-                      onChange={(e) => setManualFood({ ...manualFood, cal: e.target.value })}
-                      className="px-2.5 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-center"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Prot (g)"
-                      value={manualFood.p}
-                      onChange={(e) => setManualFood({ ...manualFood, p: e.target.value })}
-                      className="px-2.5 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-center"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Carb (g)"
-                      value={manualFood.c}
-                      onChange={(e) => setManualFood({ ...manualFood, c: e.target.value })}
-                      className="px-2.5 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-center"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Fat (g)"
-                      value={manualFood.f}
-                      onChange={(e) => setManualFood({ ...manualFood, f: e.target.value })}
-                      className="px-2.5 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-center"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 rounded-xl bg-slate-900 text-white font-bold text-sm"
-                  >
-                    Add to Today's Log
-                  </button>
-                </form>
-              )}
-
-              <div className="grid grid-cols-2 gap-2.5">
-                {GYM_FOOD_STAPLES.map((item) => (
-                  <button
-                    key={item.name}
-                    onClick={() => {
-                      setFoodLogs((prev) => [{ id: `f-${Date.now()}`, ...item }, ...prev]);
-                      showToast(`Added ${item.name}`);
-                    }}
-                    className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs text-left hover:border-orange-400 active:scale-98 transition flex items-start gap-2.5"
-                  >
-                    <span className="text-2xl">{item.icon}</span>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-bold text-sm text-slate-900 truncate">
-                        {item.name}
-                      </div>
-                      <div className="text-xs font-bold text-orange-600 mt-0.5">
-                        {item.cal} kcal · {item.p}g P
+                  <div className="grid grid-cols-3 gap-4 mt-5 pt-4 border-t border-white/10">
+                    <div className="bg-white/5 rounded-2xl p-4">
+                      <div className="text-xs font-semibold text-slate-400">VOLUME</div>
+                      <div className="text-2xl sm:text-3xl font-extrabold mt-0.5">
+                        {workoutStats.totalVol.toLocaleString()}{' '}
+                        <span className="text-xs font-normal text-slate-400">{unit.toLowerCase()}</span>
                       </div>
                     </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Logged Meals Today */}
-            <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-3">
-              <h3 className="text-lg font-extrabold text-slate-900">
-                Logged Meals ({foodLogs.length})
-              </h3>
-              {foodLogs.length === 0 ? (
-                <p className="text-sm text-slate-400 py-4 text-center">
-                  No meals logged for this date yet. Tap a staple above or use the AI scanner!
-                </p>
-              ) : (
-                <div className="space-y-2.5">
-                  {foodLogs.map((log) => (
-                    <div
-                      key={log.id}
-                      className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70"
-                    >
-                      <div>
-                        <span className="text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-orange-100 text-orange-800">
-                          {log.slot}
+                    <div className="bg-white/5 rounded-2xl p-4">
+                      <div className="text-xs font-semibold text-slate-400">SETS DONE</div>
+                      <div className="text-2xl sm:text-3xl font-extrabold mt-0.5 text-emerald-400">
+                        {workoutStats.doneSets}
+                        <span className="text-base font-semibold text-slate-400">
+                          /{workoutStats.totalSets}
                         </span>
-                        <div className="font-bold text-base text-slate-900 mt-1">
-                          {log.name}
-                        </div>
-                        <div className="text-xs font-semibold text-slate-500 mt-0.5">
-                          <strong className="text-slate-800">{log.cal} kcal</strong> · P:{' '}
-                          {log.p}g · C: {log.c}g · F: {log.f}g
-                        </div>
                       </div>
-                      <button
-                        onClick={() =>
-                          setFoodLogs((prev) => prev.filter((f) => f.id !== log.id))
-                        }
-                        className="p-2 text-slate-400 hover:text-red-600 rounded-xl"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ===================================================================
-            TAB 3: AI COACH & BARBELL PLATE CALCULATOR
-        =================================================================== */}
-        {activeTab === 'coach' && (
-          <div className="space-y-5">
-            {/* AI Strength & Nutrition Personal Assistant Chat */}
-            <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 text-white flex items-center justify-center shadow-sm shrink-0">
-                  <Brain className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-extrabold text-slate-900">
-                    AI Gym Personal Assistant
-                  </h3>
-                  <p className="text-xs font-medium text-slate-500">
-                    Synced with your live sets, RPE & daily macros
-                  </p>
-                </div>
-              </div>
-
-              {/* 1-Tap Quick Coach Prompts */}
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-                {COACH_QUICK_PROMPTS.map((q) => (
-                  <button
-                    key={q}
-                    onClick={() => askAiCoach(q)}
-                    className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-800 font-bold text-xs whitespace-nowrap border border-orange-200/60 active:scale-95 transition"
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-
-              <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-                {coachMessages.map((m, i) => (
-                  <div
-                    key={i}
-                    className={`p-3.5 rounded-2xl text-sm sm:text-base leading-relaxed font-medium ${
-                      m.role === 'user'
-                        ? 'bg-slate-900 text-white ml-8'
-                        : 'bg-slate-100 text-slate-800 mr-4'
-                    }`}
-                  >
-                    {m.text}
+                    <div className="bg-white/5 rounded-2xl p-4">
+                      <div className="text-xs font-semibold text-slate-400">AVG RPE</div>
+                      <div className="text-2xl sm:text-3xl font-extrabold mt-0.5 text-orange-400">
+                        {workoutStats.avgRpe}
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={coachInput}
-                  onChange={(e) => setCoachInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && askAiCoach()}
-                  placeholder="Ask about form, RPE, next set weight, or meals..."
-                  className="flex-1 h-12 px-4 rounded-2xl bg-slate-50 border border-slate-300 focus:border-orange-500 focus:outline-none font-medium"
-                />
-                <button
-                  onClick={() => askAiCoach()}
-                  disabled={coachLoading}
-                  className="h-12 px-5 rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-extrabold text-sm active:scale-95 transition"
-                >
-                  {coachLoading ? '...' : 'Ask'}
-                </button>
-              </div>
-            </div>
-
-            {/* Barbell & Smith Machine Plate Calculator */}
-            <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-                  <Dumbbell className="w-5 h-5 text-orange-600" /> Plate & Warm-Up Calculator
-                </h3>
-                {/* Bar Weight Selector (Olympic 20kg / 15kg / Smith 10kg) */}
-                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-                  {[
-                    { label: '20kg Bar', w: 20 },
-                    { label: '15kg Bar', w: 15 },
-                    { label: '10kg Smith', w: 10 },
-                  ].map((b) => (
+                  <div className="mt-4 flex items-center justify-between gap-2 pt-3 border-t border-white/10">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={autoStartRest}
+                        onChange={(e) => setAutoStartRest(e.target.checked)}
+                        className="rounded accent-orange-500 w-4 h-4"
+                      />
+                      Auto-Rest Timer on ✓
+                    </label>
                     <button
-                      key={b.w}
-                      onClick={() => setBarWeight(b.w)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
-                        barWeight === b.w
-                          ? 'bg-white text-slate-900 shadow-2xs'
-                          : 'text-slate-500'
+                      onClick={syncSessionToSupabase}
+                      disabled={syncingCloud}
+                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      {syncingCloud ? 'Syncing...' : 'Finish & Save Session'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Split Templates Bar */}
+                <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar pb-1">
+                  {Object.keys(WORKOUT_TEMPLATES).map((tplName) => (
+                    <button
+                      key={tplName}
+                      onClick={() => {
+                        setCurrentWorkout({
+                          title: WORKOUT_TEMPLATES[tplName].title,
+                          exercises: WORKOUT_TEMPLATES[tplName].exercises,
+                        });
+                        showToast(`Loaded ${tplName}`);
+                      }}
+                      className={`px-4 py-2.5 rounded-2xl text-sm font-bold whitespace-nowrap transition ${
+                        currentWorkout.title.startsWith(tplName)
+                          ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-md'
+                          : 'bg-white text-slate-700 border border-slate-200'
                       }`}
                     >
-                      {b.label}
+                      {tplName}
                     </button>
+                  ))}
+                  <button
+                    onClick={() => setShowExercisePicker(true)}
+                    className="px-4 py-2.5 rounded-2xl text-sm font-bold whitespace-nowrap bg-slate-900 text-white flex items-center gap-1.5 shrink-0"
+                  >
+                    <Plus className="w-4 h-4" /> Add Exercise
+                  </button>
+                </div>
+
+                {/* Laptop 2-Column Grid for Exercises */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  {currentWorkout.exercises.map((ex, exIndex) => (
+                    <div
+                      key={ex.id}
+                      className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2 mb-4">
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="w-7 h-7 rounded-xl bg-orange-100 text-orange-700 font-extrabold text-sm flex items-center justify-center">
+                                {exIndex + 1}
+                              </span>
+                              <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
+                                {ex.name}
+                              </h3>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                                {ex.muscle} · {ex.equipment}
+                              </span>
+                              <span className="text-xs font-semibold text-slate-500">
+                                Best: <strong className="text-slate-800">{ex.prevBest}</strong>
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => removeExercise(ex.id)}
+                            className="p-2 text-slate-400 hover:text-red-600 rounded-xl"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-12 gap-2 px-2 pb-2 text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                          <div className="col-span-2">SET</div>
+                          <div className="col-span-3 text-center">{unit}</div>
+                          <div className="col-span-3 text-center">REPS</div>
+                          <div className="col-span-2 text-center">RPE</div>
+                          <div className="col-span-2 text-right">DONE</div>
+                        </div>
+
+                        <div className="space-y-2.5">
+                          {ex.sets.map((s) => {
+                            const e1rm = calc1RM(s.weight, s.reps);
+                            return (
+                              <div
+                                key={s.id}
+                                className={`grid grid-cols-12 items-center gap-2 p-2.5 rounded-2xl border transition ${
+                                  s.done
+                                    ? 'bg-emerald-50/90 border-emerald-300'
+                                    : 'bg-slate-50/70 border-slate-200/80'
+                                }`}
+                              >
+                                <div className="col-span-2">
+                                  <button
+                                    onClick={() => cycleSetType(ex.id, s.id)}
+                                    className="w-10 h-11 rounded-xl font-extrabold text-sm border bg-white text-slate-800 border-slate-200"
+                                  >
+                                    {s.type}
+                                  </button>
+                                </div>
+                                <div className="col-span-3">
+                                  <input
+                                    type="number"
+                                    step="0.5"
+                                    value={s.weight}
+                                    onChange={(e) =>
+                                      updateSetField(ex.id, s.id, 'weight', e.target.value)
+                                    }
+                                    className="w-full h-11 text-center font-extrabold text-lg bg-white rounded-xl border border-slate-300"
+                                  />
+                                </div>
+                                <div className="col-span-3">
+                                  <input
+                                    type="number"
+                                    value={s.reps}
+                                    onChange={(e) =>
+                                      updateSetField(ex.id, s.id, 'reps', e.target.value)
+                                    }
+                                    className="w-full h-11 text-center font-extrabold text-lg bg-white rounded-xl border border-slate-300"
+                                  />
+                                </div>
+                                <div className="col-span-2">
+                                  <select
+                                    value={s.rpe}
+                                    onChange={(e) =>
+                                      updateSetField(ex.id, s.id, 'rpe', e.target.value)
+                                    }
+                                    className="w-full h-11 text-center font-bold text-sm bg-white rounded-xl border border-slate-300"
+                                  >
+                                    {[6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10].map((val) => (
+                                      <option key={val} value={val}>
+                                        {val}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="col-span-2 flex justify-end">
+                                  <button
+                                    onClick={() => toggleSetDone(ex.id, s.id)}
+                                    className={`w-11 h-11 rounded-2xl flex items-center justify-center transition ${
+                                      s.done
+                                        ? 'bg-emerald-600 text-white shadow-md'
+                                        : 'bg-white text-slate-400 border border-slate-300'
+                                    }`}
+                                  >
+                                    <Check className="w-6 h-6 stroke-[2.5]" />
+                                  </button>
+                                </div>
+                                <div className="col-span-12 flex items-center justify-between px-1 pt-1 text-xs text-slate-500">
+                                  <span>
+                                    Est. 1RM: <strong className="text-slate-900">{e1rm} {unit.toLowerCase()}</strong>
+                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      onClick={() =>
+                                        updateSetField(ex.id, s.id, 'weight', Math.max(0, Number(s.weight) - 2.5))
+                                      }
+                                      className="px-2 py-0.5 rounded-lg bg-white border border-slate-200 font-bold text-slate-700"
+                                    >
+                                      -2.5
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        updateSetField(ex.id, s.id, 'weight', Number(s.weight) + 2.5)
+                                      }
+                                      className="px-2 py-0.5 rounded-lg bg-white border border-slate-200 font-bold text-slate-700"
+                                    >
+                                      +2.5
+                                    </button>
+                                    <button
+                                      onClick={() => removeSet(ex.id, s.id)}
+                                      className="text-slate-400 hover:text-red-500 ml-1 font-semibold"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => addSetToExercise(ex.id)}
+                        className="mt-4 w-full py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm flex items-center justify-center gap-1.5"
+                      >
+                        <Plus className="w-4 h-4" /> Add Set
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
+            )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase">
-                    Target Lift (kg)
-                  </label>
-                  <input
-                    type="number"
-                    step="2.5"
-                    value={targetBarbellWeight}
-                    onChange={(e) => setTargetBarbellWeight(e.target.value)}
-                    className="w-full mt-1 h-12 px-3 rounded-2xl bg-slate-50 border border-slate-300 font-extrabold text-xl text-center"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase">
-                    Load Per Side
-                  </label>
-                  <div className="mt-1 h-12 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center font-extrabold text-xl text-orange-700">
-                    {plateBreakdown.perSide} kg / side
-                  </div>
-                </div>
-              </div>
-
-              {/* Visual Plate Graphic */}
-              <div className="flex items-center justify-center gap-1.5 py-4 bg-slate-50 rounded-2xl border border-slate-200/80 min-h-28 overflow-x-auto">
-                <div className="w-8 h-3 bg-slate-400 rounded-l-full" />
-                <div className="w-3 h-10 bg-slate-500 rounded-xs" />
-                {plateBreakdown.result.map((p, idx) =>
-                  Array.from({ length: p.count }).map((_, i) => (
-                    <div
-                      key={`${idx}-${i}`}
-                      className={`${p.color} ${p.h} px-2 rounded-md flex items-center justify-center font-extrabold text-xs shadow-xs`}
-                    >
-                      {p.w}
+            {/* ===============================================================
+                TAB 2: NUTRITION & AI CALORIES (2-COLUMN WIDESCREEN ON LAPTOP)
+            =============================================================== */}
+            {activeTab === 'nutrition' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="lg:col-span-5 space-y-5">
+                  <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-base font-extrabold text-slate-900">
+                        Daily Macros ({selectedDate})
+                      </h3>
+                      <span className="text-xs font-extrabold px-2.5 py-1 rounded-full bg-orange-50 text-orange-700">
+                        {Math.max(0, targets.cal - macroTotals.cal)} kcal left
+                      </span>
                     </div>
-                  ))
-                )}
-                <div className="w-6 h-3 bg-slate-400 rounded-r-full" />
-              </div>
-
-              {/* Warm-Up Ramp Generator */}
-              <div>
-                <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-2">
-                  Recommended Warm-Up Sets (Tap to set target)
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  {[
-                    { pct: '40%', reps: '8 reps', mult: 0.4 },
-                    { pct: '60%', reps: '5 reps', mult: 0.6 },
-                    { pct: '75%', reps: '3 reps', mult: 0.75 },
-                    { pct: '85%', reps: '1 rep', mult: 0.85 },
-                  ].map((ramp) => {
-                    const w = Math.max(
-                      barWeight,
-                      Math.round((Number(targetBarbellWeight) * ramp.mult) / 2.5) * 2.5
-                    );
-                    return (
-                      <button
-                        key={ramp.pct}
-                        onClick={() => setTargetBarbellWeight(w)}
-                        className="p-2.5 rounded-2xl bg-slate-50 hover:bg-orange-50 border border-slate-200 text-center transition"
-                      >
-                        <div className="text-xs font-bold text-orange-600">{ramp.pct}</div>
-                        <div className="text-base font-extrabold text-slate-900">{w}kg</div>
-                        <div className="text-[11px] font-medium text-slate-500">
-                          {ramp.reps}
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="relative w-28 h-28 flex items-center justify-center shrink-0">
+                        <svg className="w-28 h-28 -rotate-90" viewBox="0 0 108 108">
+                          <circle cx="54" cy="54" r={ringRadius} stroke="#F1F5F9" strokeWidth="10" fill="transparent" />
+                          <circle
+                            cx="54"
+                            cy="54"
+                            r={ringRadius}
+                            stroke="#F97316"
+                            strokeWidth="10"
+                            strokeDasharray={ringCircumference}
+                            strokeDashoffset={ringOffset}
+                            strokeLinecap="round"
+                            fill="transparent"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                          <span className="text-xl font-extrabold text-slate-900">{macroTotals.cal}</span>
+                          <span className="text-[11px] font-bold text-slate-400">/ {targets.cal}</span>
                         </div>
+                      </div>
+                      <div className="flex-1 space-y-3">
+                        <div>
+                          <div className="flex justify-between text-sm font-bold mb-1">
+                            <span>Protein</span>
+                            <span className="text-emerald-600">{macroTotals.p}g / {targets.p}g</span>
+                          </div>
+                          <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, (macroTotals.p / targets.p) * 100)}%` }} />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-sm font-bold mb-1">
+                            <span>Carbs</span>
+                            <span className="text-blue-600">{macroTotals.c}g / {targets.c}g</span>
+                          </div>
+                          <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(100, (macroTotals.c / targets.c) * 100)}%` }} />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-sm font-bold mb-1">
+                            <span>Fats</span>
+                            <span className="text-amber-600">{macroTotals.f}g / {targets.f}g</span>
+                          </div>
+                          <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-amber-500 rounded-full" style={{ width: `${Math.min(100, (macroTotals.f / targets.f) * 100)}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* AI Scanner */}
+                  <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-orange-600" /> AI Macro Scanner
+                      </h3>
+                      <select
+                        value={selectedMealSlot}
+                        onChange={(e) => setSelectedMealSlot(e.target.value)}
+                        className="px-3 py-1.5 rounded-xl bg-slate-100 font-bold text-sm"
+                      >
+                        {['Breakfast', 'Pre-Workout', 'Post-Workout', 'Lunch', 'Dinner', 'Snack'].map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <textarea
+                      rows={2}
+                      value={aiFoodPrompt}
+                      onChange={(e) => setAiFoodPrompt(e.target.value)}
+                      placeholder="e.g. '200g chicken breast, 1 bowl white rice, 2 eggs'..."
+                      className="w-full p-3.5 rounded-2xl bg-slate-50 border border-slate-200 font-medium"
+                    />
+                    <div className="flex items-center gap-2">
+                      <label className="px-4 py-3 rounded-2xl bg-slate-100 font-bold text-sm flex items-center gap-2 cursor-pointer">
+                        <Camera className="w-5 h-5" /> Photo
+                        <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                      </label>
+                      <button
+                        onClick={handleAnalyzeFoodWithAI}
+                        disabled={aiFoodLoading}
+                        className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-extrabold"
+                      >
+                        {aiFoodLoading ? 'Analyzing...' : 'AI Calculate & Log'}
                       </button>
-                    );
-                  })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-7 space-y-5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {GYM_FOOD_STAPLES.map((item) => (
+                      <button
+                        key={item.name}
+                        onClick={() => {
+                          setFoodLogs((prev) => [{ id: `f-${Date.now()}`, ...item }, ...prev]);
+                          showToast(`Added ${item.name}`);
+                        }}
+                        className="bg-white p-3.5 rounded-2xl border border-slate-200/80 text-left hover:border-orange-400 transition"
+                      >
+                        <span className="text-2xl">{item.icon}</span>
+                        <div className="font-bold text-xs text-slate-900 truncate mt-1">{item.name}</div>
+                        <div className="text-xs font-extrabold text-orange-600">{item.cal} kcal · {item.p}g P</div>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-3">
+                    <h3 className="text-lg font-extrabold text-slate-900">Logged Meals ({foodLogs.length})</h3>
+                    <div className="space-y-2.5">
+                      {foodLogs.map((log) => (
+                        <div key={log.id} className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70">
+                          <div>
+                            <span className="text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-orange-100 text-orange-800">{log.slot}</span>
+                            <div className="font-bold text-base text-slate-900 mt-1">{log.name}</div>
+                            <div className="text-xs font-semibold text-slate-500">
+                              <strong>{log.cal} kcal</strong> · P: {log.p}g · C: {log.c}g · F: {log.f}g
+                            </div>
+                          </div>
+                          <button onClick={() => setFoodLogs((prev) => prev.filter((f) => f.id !== log.id))} className="p-2 text-slate-400 hover:text-red-600">
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* ===================================================================
-            TAB 4: PROGRESS, PR LEADERBOARD & TDEE CALCULATOR
-        =================================================================== */}
-        {activeTab === 'progress' && (
-          <div className="space-y-5">
-            {/* Estimated 1RM PR Leaderboard */}
-            <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-amber-500" /> Estimated 1RM Records
-                </h3>
-                <span className="text-xs font-bold text-slate-400">Epley Formula</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {prLeaderboard.slice(0, 6).map((item) => (
-                  <div
-                    key={item.name}
-                    className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between"
-                  >
+            {/* ===============================================================
+                TAB 3: AI COACH & BARBELL PLATE CALCULATOR (2-COLUMN WIDESCREEN)
+            =============================================================== */}
+            {activeTab === 'coach' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 text-white flex items-center justify-center">
+                      <Brain className="w-5 h-5" />
+                    </div>
                     <div>
-                      <div className="font-bold text-sm text-slate-900">{item.name}</div>
-                      <div className="text-xs font-semibold text-slate-500">
-                        Best Set: {item.weight}kg × {item.reps}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-extrabold text-orange-600">
-                        {item.e1rm} kg
-                      </div>
-                      <div className="text-[10px] font-bold uppercase text-slate-400">
-                        Est. 1RM
-                      </div>
+                      <h3 className="text-lg font-extrabold text-slate-900">AI Gym Personal Assistant</h3>
+                      <p className="text-xs font-medium text-slate-500">Synced with your live sets, RPE & macros</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Morning Weigh-In Tracker */}
-            <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-extrabold text-slate-900">
-                    Morning Bodyweight Trend
-                  </h3>
-                  <p className="text-xs font-medium text-slate-500">
-                    7-Day Moving Average:{' '}
-                    <strong className="text-slate-800">
-                      {(
-                        bodyweightLogs.reduce((a, b) => a + Number(b.weight), 0) /
-                        bodyweightLogs.length
-                      ).toFixed(1)}{' '}
-                      kg
-                    </strong>
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={newWeightInput}
-                    onChange={(e) => setNewWeightInput(e.target.value)}
-                    className="w-24 h-10 text-center font-extrabold rounded-xl bg-slate-50 border border-slate-300"
-                  />
-                  <button
-                    onClick={() => {
-                      setBodyweightLogs((prev) => [
-                        ...prev.slice(1),
-                        { date: 'Today', weight: Number(newWeightInput) || 74.2 },
-                      ]);
-                      showToast(`Logged morning weight: ${newWeightInput} kg`);
-                    }}
-                    className="h-10 px-3.5 rounded-xl bg-slate-900 text-white font-bold text-xs"
-                  >
-                    Log kg
-                  </button>
-                </div>
-              </div>
-
-              {/* Clean Visual Bar Trend */}
-              <div className="grid grid-cols-7 gap-2 pt-3 items-end h-36 bg-slate-50 p-4 rounded-2xl border border-slate-200/60">
-                {bodyweightLogs.map((item, idx) => {
-                  const pct = Math.min(100, Math.max(25, ((item.weight - 72.5) / 3.5) * 100));
-                  return (
-                    <div
-                      key={idx}
-                      className="flex flex-col items-center gap-1.5 h-full justify-end"
-                    >
-                      <span className="text-[11px] font-extrabold text-slate-700">
-                        {item.weight}
-                      </span>
+                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                    {COACH_QUICK_PROMPTS.map((q) => (
+                      <button
+                        key={q}
+                        onClick={() => askAiCoach(q)}
+                        className="px-3 py-1.5 rounded-xl bg-orange-50 text-orange-800 font-bold text-xs whitespace-nowrap border border-orange-200/60"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                    {coachMessages.map((m, i) => (
                       <div
-                        className="w-full max-w-[28px] rounded-t-xl bg-gradient-to-t from-orange-500 to-amber-400"
-                        style={{ height: `${pct}%` }}
-                      />
-                      <span className="text-[10px] font-bold text-slate-400">
-                        {item.date}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                        key={i}
+                        className={`p-3.5 rounded-2xl text-sm leading-relaxed font-medium ${
+                          m.role === 'user' ? 'bg-slate-900 text-white ml-8' : 'bg-slate-100 text-slate-800 mr-4'
+                        }`}
+                      >
+                        {m.text}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={coachInput}
+                      onChange={(e) => setCoachInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && askAiCoach()}
+                      placeholder="Ask about form, RPE, or meals..."
+                      className="flex-1 h-12 px-4 rounded-2xl bg-slate-50 border border-slate-300 font-medium"
+                    />
+                    <button
+                      onClick={() => askAiCoach()}
+                      disabled={coachLoading}
+                      className="h-12 px-5 rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-extrabold text-sm"
+                    >
+                      Ask
+                    </button>
+                  </div>
+                </div>
 
-            {/* Interactive TDEE & Lifter Macro Calculator */}
-            <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-extrabold text-slate-900">
-                    TDEE & Lifter Macro Calculator
+                <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-4">
+                  <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                    <Dumbbell className="w-5 h-5 text-orange-600" /> Plate & Warm-Up Calculator
                   </h3>
-                  <p className="text-xs font-medium text-slate-500">
-                    Mifflin-St Jeor formula + 2.2g/kg protein for strength athletes
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2.5">
-                <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
-                  <label className="text-[11px] font-bold text-slate-500">Weight (kg)</label>
-                  <input
-                    type="number"
-                    value={tdeeForm.weight}
-                    onChange={(e) => setTdeeForm({ ...tdeeForm, weight: e.target.value })}
-                    className="w-full mt-1 font-extrabold text-base bg-white rounded-xl border border-slate-300 px-2 py-1 text-center"
-                  />
-                </div>
-                <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
-                  <label className="text-[11px] font-bold text-slate-500">Height (cm)</label>
-                  <input
-                    type="number"
-                    value={tdeeForm.height}
-                    onChange={(e) => setTdeeForm({ ...tdeeForm, height: e.target.value })}
-                    className="w-full mt-1 font-extrabold text-base bg-white rounded-xl border border-slate-300 px-2 py-1 text-center"
-                  />
-                </div>
-                <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
-                  <label className="text-[11px] font-bold text-slate-500">Age</label>
-                  <input
-                    type="number"
-                    value={tdeeForm.age}
-                    onChange={(e) => setTdeeForm({ ...tdeeForm, age: e.target.value })}
-                    className="w-full mt-1 font-extrabold text-base bg-white rounded-xl border border-slate-300 px-2 py-1 text-center"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: 'cut', label: 'Fat Loss (-400)' },
-                  { id: 'recomp', label: 'Recomp (Maint.)' },
-                  { id: 'lean_bulk', label: 'Lean Bulk (+250)' },
-                ].map((g) => (
-                  <button
-                    key={g.id}
-                    onClick={() => setTdeeForm({ ...tdeeForm, goal: g.id })}
-                    className={`py-2.5 px-2 rounded-2xl font-bold text-xs border transition ${
-                      tdeeForm.goal === g.id
-                        ? 'bg-slate-900 text-white border-slate-900'
-                        : 'bg-slate-50 text-slate-700 border-slate-200'
-                    }`}
-                  >
-                    {g.label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="p-4 rounded-2xl bg-orange-50 border border-orange-200/80 flex items-center justify-between flex-wrap gap-3">
-                <div>
-                  <div className="text-xs font-bold text-orange-800">
-                    Recommended Daily Target
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase">Target Lift ({unit})</label>
+                      <input
+                        type="number"
+                        step="2.5"
+                        value={targetBarbellWeight}
+                        onChange={(e) => setTargetBarbellWeight(e.target.value)}
+                        className="w-full mt-1 h-12 px-3 rounded-2xl bg-slate-50 border border-slate-300 font-extrabold text-xl text-center"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase">Load Per Side</label>
+                      <div className="mt-1 h-12 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center font-extrabold text-xl text-orange-700">
+                        {plateBreakdown.perSide} {unit.toLowerCase()} / side
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-xl font-extrabold text-slate-900 mt-0.5">
-                    {calculatedTdee.cal} kcal{' '}
-                    <span className="text-xs font-bold text-slate-600">
-                      ({calculatedTdee.p}g P · {calculatedTdee.c}g C · {calculatedTdee.f}g F)
-                    </span>
+                  <div className="flex items-center justify-center gap-1.5 py-4 bg-slate-50 rounded-2xl border border-slate-200/80 min-h-28">
+                    <div className="w-8 h-3 bg-slate-400 rounded-l-full" />
+                    <div className="w-3 h-10 bg-slate-500 rounded-xs" />
+                    {plateBreakdown.result.map((p, idx) =>
+                      Array.from({ length: p.count }).map((_, i) => (
+                        <div key={`${idx}-${i}`} className={`${p.color} ${p.h} px-2 rounded-md flex items-center justify-center font-extrabold text-xs`}>
+                          {p.w}
+                        </div>
+                      ))
+                    )}
+                    <div className="w-6 h-3 bg-slate-400 rounded-r-full" />
                   </div>
                 </div>
-                <button
-                  onClick={() => {
-                    setTargets({
-                      cal: calculatedTdee.cal,
-                      p: calculatedTdee.p,
-                      c: calculatedTdee.c,
-                      f: calculatedTdee.f,
-                    });
-                    showToast('Applied new daily macro targets!');
-                  }}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-extrabold text-xs shadow-sm active:scale-95"
-                >
-                  Apply Targets
-                </button>
               </div>
-            </div>
-          </div>
+            )}
+
+            {/* ===============================================================
+                TAB 4: PROGRESS & TDEE (2-COLUMN WIDESCREEN)
+            =============================================================== */}
+            {activeTab === 'progress' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-3">
+                  <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-amber-500" /> Estimated 1RM Records
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {prLeaderboard.slice(0, 6).map((item) => (
+                      <div key={item.name} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+                        <div>
+                          <div className="font-bold text-sm text-slate-900">{item.name}</div>
+                          <div className="text-xs font-semibold text-slate-500">Best: {item.weight}kg × {item.reps}</div>
+                        </div>
+                        <div className="text-lg font-extrabold text-orange-600">{item.e1rm} kg</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-4">
+                  <h3 className="text-lg font-extrabold text-slate-900">TDEE & Lifter Macro Calculator</h3>
+                  <div className="p-4 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-bold text-orange-800">Recommended Daily Target</div>
+                      <div className="text-xl font-extrabold text-slate-900">
+                        {calculatedTdee.cal} kcal ({calculatedTdee.p}g P · {calculatedTdee.c}g C · {calculatedTdee.f}g F)
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setTargets({ cal: calculatedTdee.cal, p: calculatedTdee.p, c: calculatedTdee.c, f: calculatedTdee.f });
+                        showToast('Applied new daily macro targets!');
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-orange-600 text-white font-extrabold text-xs"
+                    >
+                      Apply Targets
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
-        </>
-      )}
       </main>
 
       {/* =====================================================================
-          EXERCISE PICKER DRAWER (MODAL)
+          SUPERAPP MODALS: BURGER DRAWER, AUTH MODAL, QR PASS, EXERCISE PICKER
       ===================================================================== */}
+      <SuperBurgerDrawer
+        isOpen={showBurgerDrawer}
+        onClose={() => setShowBurgerDrawer(false)}
+        user={user}
+        onOpenAuth={() => setShowAuthModal(true)}
+        onSignOut={() => {
+          setUser({ name: 'Guest Athlete', email: 'Not signed in', role: 'guest' });
+          showToast('Signed out of session');
+        }}
+        lang={lang}
+        setLang={setLang}
+        unit={unit}
+        setUnit={setUnit}
+        onQuickAction={handleBurgerQuickAction}
+        onForceRefresh={handleForceRefresh}
+        onOpenBackup={() => setShowSqlModal(true)}
+      />
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onLoginSuccess={(loggedInUser) => {
+          setUser(loggedInUser);
+          if (loggedInUser.role === 'boss' || loggedInUser.role === 'pt') {
+            setAppMode('pt_portal');
+          }
+          showToast(`Welcome, ${loggedInUser.name}!`);
+        }}
+      />
+
+      {/* Digital Gym Member Check-In QR Pass Modal */}
+      {showQrModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-sm rounded-3xl p-6 text-center space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">
+                ACTIVE GYM ACCESS PASS
+              </span>
+              <button onClick={() => setShowQrModal(false)} className="p-2 rounded-full bg-slate-100">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 bg-slate-900 rounded-3xl text-white flex flex-col items-center space-y-3">
+              <QrCode className="w-40 h-40 text-white" />
+              <div className="font-extrabold text-lg">{user?.name}</div>
+              <div className="text-xs font-mono text-orange-400">ID: IRON-8829-KL</div>
+            </div>
+            <p className="text-xs font-semibold text-slate-500">
+              Scan at gym turnstile or show to PT counter for instant check-in.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Exercise Picker Modal */}
       {showExercisePicker && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col shadow-2xl">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xl font-extrabold text-slate-900">Select Exercise</h3>
-              <button
-                onClick={() => setShowExercisePicker(false)}
-                className="p-2 rounded-full bg-slate-100 text-slate-600"
-              >
+              <button onClick={() => setShowExercisePicker(false)} className="p-2 rounded-full bg-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
-
-            <div className="relative mb-3">
-              <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-3.5" />
-              <input
-                type="text"
-                value={exerciseSearch}
-                onChange={(e) => setExerciseSearch(e.target.value)}
-                placeholder="Search bench, squat, row, lateral raise..."
-                className="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-100 font-medium focus:outline-none"
-              />
-            </div>
-
-            {/* Muscle Filter Chips */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar mb-3 pb-1">
-              {['All', 'Chest', 'Back', 'Shoulders', 'Legs', 'Triceps', 'Biceps'].map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMuscleFilter(m)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap ${
-                    muscleFilter === m
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-
             <div className="overflow-y-auto space-y-2 flex-1 pr-1">
-              {EXERCISE_LIBRARY.filter((e) => {
-                const matchesMuscle = muscleFilter === 'All' || e.muscle === muscleFilter;
-                const matchesText =
-                  e.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
-                  e.equipment.toLowerCase().includes(exerciseSearch.toLowerCase());
-                return matchesMuscle && matchesText;
-              }).map((item) => (
+              {EXERCISE_LIBRARY.map((item) => (
                 <button
                   key={item.name}
                   onClick={() => addExerciseFromLibrary(item)}
-                  className="w-full p-3.5 rounded-2xl bg-slate-50 hover:bg-orange-50 border border-slate-200/80 flex items-center justify-between text-left transition"
+                  className="w-full p-3.5 rounded-2xl bg-slate-50 hover:bg-orange-50 border border-slate-200 flex items-center justify-between text-left"
                 >
                   <div>
-                    <div className="font-extrabold text-base text-slate-900">
-                      {item.name}
-                    </div>
-                    <div className="text-xs font-bold text-slate-500 mt-0.5">
-                      {item.muscle} · {item.equipment} · Best: {item.defaultBest}
-                    </div>
+                    <div className="font-extrabold text-base text-slate-900">{item.name}</div>
+                    <div className="text-xs font-bold text-slate-500">{item.muscle} · {item.equipment}</div>
                   </div>
-                  <Plus className="w-5 h-5 text-orange-600 shrink-0" />
+                  <Plus className="w-5 h-5 text-orange-600" />
                 </button>
               ))}
             </div>
@@ -2231,124 +1651,39 @@ export default function App() {
         </div>
       )}
 
-      {/* =====================================================================
-          SUPABASE SQL & BACKUP MODAL
-      ===================================================================== */}
-      {showSqlModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-3xl p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-extrabold text-slate-900">
-                Data Backup & Supabase Cloud Status
-              </h3>
-              <button
-                onClick={() => setShowSqlModal(false)}
-                className="p-2 rounded-full bg-slate-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div
-              className={`p-3.5 rounded-2xl border text-xs font-bold flex items-center gap-2.5 ${
-                isSupabaseConfigured
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                  : 'bg-amber-50 border-amber-200 text-amber-800'
-              }`}
-            >
-              <Database className="w-5 h-5 shrink-0" />
-              <span>
-                {isSupabaseConfigured
-                  ? 'Connected to your Supabase project via VITE_SUPABASE_URL!'
-                  : 'Running in Local Device Storage mode. Add VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY to .env for cloud sync.'}
-              </span>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  const blob = new Blob(
-                    [
-                      JSON.stringify(
-                        { workoutHistory, foodLogsByDate, targets, bodyweightLogs },
-                        null,
-                        2
-                      ),
-                    ],
-                    { type: 'application/json' }
-                  );
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `ironlog-backup-${selectedDate}.json`;
-                  a.click();
-                  showToast('Exported JSON backup!');
-                }}
-                className="flex-1 py-3 rounded-2xl bg-slate-900 text-white font-bold text-sm flex items-center justify-center gap-2"
-              >
-                <Download className="w-4 h-4" /> Export Backup JSON
-              </button>
-            </div>
+      {/* Fixed Bottom Navigation */}
+      {appMode === 'personal' && (
+        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200/90 pb-safe shadow-lg">
+          <div className="max-w-4xl mx-auto grid grid-cols-4 px-2 py-2">
+            {[
+              { id: 'workout', label: t.workout, icon: Dumbbell, badge: `${workoutStats.doneSets}/${workoutStats.totalSets}` },
+              { id: 'nutrition', label: t.nutrition, icon: Flame, badge: `${macroTotals.cal}` },
+              { id: 'coach', label: t.coach, icon: Brain, badge: 'AI' },
+              { id: 'progress', label: t.progress, icon: TrendingUp, badge: '74.2kg' },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex flex-col items-center justify-center py-1.5 rounded-2xl transition ${
+                    active ? 'text-orange-600' : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  <div className="flex items-center gap-1">
+                    <Icon className="w-6 h-6" />
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold ${active ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {tab.badge}
+                    </span>
+                  </div>
+                  <span className="text-xs mt-1 font-extrabold">{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
-        </div>
+        </nav>
       )}
-
-      {/* =====================================================================
-          APPLE iOS-STYLE FIXED BOTTOM TAB NAVIGATION BAR
-      ===================================================================== */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200/90 pb-safe shadow-lg">
-        <div className="max-w-2xl mx-auto grid grid-cols-4 px-2 py-2">
-          {[
-            {
-              id: 'workout',
-              label: 'Workout',
-              icon: Dumbbell,
-              badge: `${workoutStats.doneSets}/${workoutStats.totalSets}`,
-            },
-            {
-              id: 'nutrition',
-              label: 'Nutrition',
-              icon: Flame,
-              badge: `${macroTotals.cal}`,
-            },
-            { id: 'coach', label: 'AI Coach', icon: Brain, badge: 'AI' },
-            {
-              id: 'progress',
-              label: 'Progress',
-              icon: TrendingUp,
-              badge: `${bodyweightLogs[bodyweightLogs.length - 1]?.weight || 74.2}kg`,
-            },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex flex-col items-center justify-center py-1.5 rounded-2xl transition active:scale-95 ${
-                  active ? 'text-orange-600' : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                <div className="flex items-center gap-1">
-                  <Icon className={`w-6 h-6 ${active ? 'stroke-[2.5]' : 'stroke-2'}`} />
-                  <span
-                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold ${
-                      active
-                        ? 'bg-orange-100 text-orange-700'
-                        : 'bg-slate-100 text-slate-500'
-                    }`}
-                  >
-                    {tab.badge}
-                  </span>
-                </div>
-                <span className={`text-xs mt-1 ${active ? 'font-extrabold' : 'font-semibold'}`}>
-                  {tab.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Users, Calendar, DollarSign, AlertTriangle, Award, ShieldCheck,
-  Database, Copy, Check, TrendingUp, Briefcase
+  Users, Calendar, AlertTriangle, Database, Copy, Check, Briefcase, QrCode
 } from 'lucide-react';
 import {
   INITIAL_TRAINERS,
@@ -12,8 +11,7 @@ import {
 import ClientManager from './ClientManager';
 import ScheduleCalendar from './ScheduleCalendar';
 
-export default function PTPortal({ showToast }) {
-  // Role Switcher: 'boss' (Gym Owner) or 'pt-1', 'pt-2', 'pt-3'
+export default function PTPortal({ showToast, externalCommand }) {
   const [currentRole, setCurrentRole] = useState('boss');
   const [subTab, setSubTab] = useState('clients'); // 'clients' | 'schedule' | 'boss_analytics'
   const [copiedSql, setCopiedSql] = useState(false);
@@ -28,6 +26,15 @@ export default function PTPortal({ showToast }) {
     return saved ? JSON.parse(saved) : INITIAL_SCHEDULES;
   });
 
+  // Listen to Burger Menu Quick Commands
+  useEffect(() => {
+    if (!externalCommand) return;
+    if (externalCommand.type === 'view_timetable') setSubTab('schedule');
+    if (externalCommand.type === 'view_clients' || externalCommand.type === 'add_client') {
+      setSubTab('clients');
+    }
+  }, [externalCommand]);
+
   useEffect(() => {
     localStorage.setItem('ironlog_pt_clients_v1', JSON.stringify(clients));
   }, [clients]);
@@ -36,7 +43,6 @@ export default function PTPortal({ showToast }) {
     localStorage.setItem('ironlog_pt_schedules_v1', JSON.stringify(schedules));
   }, [schedules]);
 
-  // Gym Boss Business Metrics
   const businessStats = useMemo(() => {
     const totalRevenueRM = clients.reduce(
       (sum, c) => sum + (Number(c.packagePriceRM) || 0),
@@ -55,28 +61,27 @@ export default function PTPortal({ showToast }) {
   }, [clients, schedules]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* =====================================================================
-          ROLE SWITCHER BANNER (GYM BOSS VS PERSONAL TRAINER VIEW)
+          ROLE SWITCHER BANNER (WIDESCREEN OPTIMIZED)
       ===================================================================== */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-zinc-900 text-white rounded-3xl p-5 shadow-lg space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-zinc-900 text-white rounded-3xl p-6 shadow-lg space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <span className="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400">
-              GYM MANAGEMENT SYSTEM
+            <span className="text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-orange-500/20 text-orange-400">
+              GYM SUPERAPP MANAGEMENT
             </span>
-            <h2 className="text-xl sm:text-2xl font-extrabold mt-1">
+            <h2 className="text-2xl sm:text-3xl font-extrabold mt-1.5">
               {currentRole === 'boss'
                 ? 'Gym Owner / Boss Master Portal'
                 : `${trainers.find((t) => t.id === currentRole)?.name}'s PT Console`}
             </h2>
           </div>
 
-          {/* Switch Active Perspective */}
-          <div className="flex items-center gap-1.5 bg-white/10 p-1.5 rounded-2xl">
+          <div className="flex items-center gap-1.5 bg-white/10 p-1.5 rounded-2xl flex-wrap">
             <button
               onClick={() => setCurrentRole('boss')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition ${
+              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition ${
                 currentRole === 'boss'
                   ? 'bg-orange-500 text-white shadow-xs'
                   : 'text-slate-300 hover:text-white'
@@ -88,7 +93,7 @@ export default function PTPortal({ showToast }) {
               <button
                 key={pt.id}
                 onClick={() => setCurrentRole(pt.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition ${
+                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition ${
                   currentRole === pt.id
                     ? 'bg-orange-500 text-white shadow-xs'
                     : 'text-slate-300 hover:text-white'
@@ -100,30 +105,25 @@ export default function PTPortal({ showToast }) {
           </div>
         </div>
 
-        {/* KPI Summary Cards */}
-        <div className="grid grid-cols-3 gap-2.5 pt-2 border-t border-white/10">
-          <div className="bg-white/5 p-3 rounded-2xl">
-            <div className="text-[11px] font-bold text-slate-400 uppercase">
-              ACTIVE CLIENTS
-            </div>
-            <div className="text-xl sm:text-2xl font-extrabold mt-0.5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2 border-t border-white/10">
+          <div className="bg-white/5 p-4 rounded-2xl">
+            <div className="text-xs font-bold text-slate-400 uppercase">ACTIVE CLIENTS</div>
+            <div className="text-2xl sm:text-3xl font-extrabold mt-1">
               {businessStats.activeClients}
             </div>
           </div>
-          <div className="bg-white/5 p-3 rounded-2xl">
-            <div className="text-[11px] font-bold text-slate-400 uppercase">
-              RENEWAL ALERTS
-            </div>
-            <div className="text-xl sm:text-2xl font-extrabold text-amber-400 mt-0.5">
+          <div className="bg-white/5 p-4 rounded-2xl">
+            <div className="text-xs font-bold text-slate-400 uppercase">RENEWAL ALERTS</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-amber-400 mt-1">
               {businessStats.lowBalanceClients.length}{' '}
-              <span className="text-xs font-normal text-slate-300">clients</span>
+              <span className="text-sm font-normal text-slate-300">clients</span>
             </div>
           </div>
-          <div className="bg-white/5 p-3 rounded-2xl">
-            <div className="text-[11px] font-bold text-slate-400 uppercase">
+          <div className="bg-white/5 p-4 rounded-2xl">
+            <div className="text-xs font-bold text-slate-400 uppercase">
               {currentRole === 'boss' ? 'PACKAGE SALES' : 'COMPLETED TODAY'}
             </div>
-            <div className="text-xl sm:text-2xl font-extrabold text-emerald-400 mt-0.5">
+            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-400 mt-1">
               {currentRole === 'boss'
                 ? `RM ${businessStats.totalRevenueRM.toLocaleString()}`
                 : `${businessStats.completedToday} sessions`}
@@ -133,42 +133,39 @@ export default function PTPortal({ showToast }) {
       </div>
 
       {/* Sub-Navigation Pills */}
-      <div className="grid grid-cols-3 gap-2 bg-white p-1.5 rounded-2xl border border-slate-200/80 shadow-2xs">
+      <div className="grid grid-cols-3 gap-2.5 bg-white p-2 rounded-2xl border border-slate-200/80 shadow-2xs">
         <button
           onClick={() => setSubTab('clients')}
-          className={`py-2.5 rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition ${
+          className={`py-3 rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition ${
             subTab === 'clients'
               ? 'bg-slate-900 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          <Users className="w-4 h-4" /> Clients & Logs
+          <Users className="w-4 h-4" /> Clients & Workout Logs
         </button>
         <button
           onClick={() => setSubTab('schedule')}
-          className={`py-2.5 rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition ${
+          className={`py-3 rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition ${
             subTab === 'schedule'
               ? 'bg-slate-900 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          <Calendar className="w-4 h-4" /> PT Timetable
+          <Calendar className="w-4 h-4" /> PT Timetable & Chart
         </button>
         <button
           onClick={() => setSubTab('boss_analytics')}
-          className={`py-2.5 rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition ${
+          className={`py-3 rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition ${
             subTab === 'boss_analytics'
               ? 'bg-slate-900 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          <Briefcase className="w-4 h-4" /> Boss & Payroll
+          <Briefcase className="w-4 h-4" /> Boss & Commissions
         </button>
       </div>
 
-      {/* =====================================================================
-          SUB-TAB 1: CLIENT DIRECTORY & SESSION WORKOUT LOGGER
-      ===================================================================== */}
       {subTab === 'clients' && (
         <ClientManager
           clients={clients}
@@ -179,9 +176,6 @@ export default function PTPortal({ showToast }) {
         />
       )}
 
-      {/* =====================================================================
-          SUB-TAB 2: MASTER & INDIVIDUAL PT SCHEDULE
-      ===================================================================== */}
       {subTab === 'schedule' && (
         <ScheduleCalendar
           schedules={schedules}
@@ -194,12 +188,8 @@ export default function PTPortal({ showToast }) {
         />
       )}
 
-      {/* =====================================================================
-          SUB-TAB 3: GYM OWNER / BOSS ANALYTICS, COMMISSIONS & RENEWAL ALERTS
-      ===================================================================== */}
       {subTab === 'boss_analytics' && (
-        <div className="space-y-5">
-          {/* Low Package Balance Renewal Radar */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-3">
             <div className="flex items-center gap-2 text-amber-600">
               <AlertTriangle className="w-5 h-5" />
@@ -207,22 +197,16 @@ export default function PTPortal({ showToast }) {
                 Urgent Package Renewal Radar (≤ 2 Sessions Left)
               </h3>
             </div>
-            <p className="text-xs font-medium text-slate-500">
-              Follow up with these clients on WhatsApp to renew their PT packages before credits run out.
-            </p>
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {businessStats.lowBalanceClients.map((c) => (
                 <div
                   key={c.id}
-                  className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 flex items-center justify-between"
+                  className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 flex items-center justify-between"
                 >
                   <div>
-                    <div className="font-extrabold text-base text-slate-900">
-                      {c.name}
-                    </div>
+                    <div className="font-extrabold text-base text-slate-900">{c.name}</div>
                     <div className="text-xs font-semibold text-slate-600">
-                      {c.phone} · Trainer:{' '}
-                      {trainers.find((t) => t.id === c.assignedPtId)?.name}
+                      {c.phone} · Trainer: {trainers.find((t) => t.id === c.assignedPtId)?.name}
                     </div>
                   </div>
                   <span className="px-3 py-1 rounded-full bg-red-600 text-white font-extrabold text-xs">
@@ -233,7 +217,6 @@ export default function PTPortal({ showToast }) {
             </div>
           </div>
 
-          {/* Trainer Commission & Performance Breakdown */}
           <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-3">
             <h3 className="text-lg font-extrabold text-slate-900">
               PT Staff Commission & Active Load
@@ -246,64 +229,29 @@ export default function PTPortal({ showToast }) {
                   0
                 );
                 const commissionRM = Math.round(salesRM * pt.commissionRate);
-                const sessionsDelivered = ptClients.reduce(
-                  (sum, c) => sum + c.sessionsUsed,
-                  0
-                );
-
                 return (
                   <div
                     key={pt.id}
-                    className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-wrap items-center justify-between gap-3"
+                    className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between"
                   >
                     <div>
-                      <div className="font-extrabold text-base text-slate-900">
-                        {pt.name}
-                      </div>
+                      <div className="font-extrabold text-base text-slate-900">{pt.name}</div>
                       <div className="text-xs font-semibold text-slate-500">
-                        {pt.specialty} · {ptClients.length} Active Clients ·{' '}
-                        {sessionsDelivered} Sessions Conducted
+                        {pt.specialty} · {ptClients.length} Clients
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="text-base font-extrabold text-emerald-600">
-                        Est. Payout: RM {commissionRM.toLocaleString()}
+                        RM {commissionRM.toLocaleString()}
                       </div>
                       <div className="text-[11px] font-bold text-slate-400">
-                        ({pt.commissionRate * 100}% of RM {salesRM.toLocaleString()})
+                        ({pt.commissionRate * 100}% commission)
                       </div>
                     </div>
                   </div>
                 );
               })}
             </div>
-          </div>
-
-          {/* Supabase SQL Schema Generator for PT Tables */}
-          <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Database className="w-5 h-5 text-orange-600" />
-                <h3 className="text-base font-extrabold text-slate-900">
-                  Supabase SQL Schema for PT System
-                </h3>
-              </div>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(PT_SUPABASE_SQL);
-                  setCopiedSql(true);
-                  setTimeout(() => setCopiedSql(false), 2000);
-                  showToast('Copied PT SQL Schema!');
-                }}
-                className="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center gap-1.5"
-              >
-                {copiedSql ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copiedSql ? 'Copied' : 'Copy SQL'}
-              </button>
-            </div>
-            <pre className="p-3.5 rounded-2xl bg-slate-900 text-slate-100 text-xs font-mono overflow-x-auto max-h-52">
-              {PT_SUPABASE_SQL}
-            </pre>
           </div>
         </div>
       )}
