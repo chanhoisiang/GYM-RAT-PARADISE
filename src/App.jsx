@@ -966,13 +966,13 @@ export default function App() {
       ===================================================================== */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
         <div className="max-w-2xl mx-auto px-4 py-3">
-          {/* Row 1: Brand + Logo.png + Active Session Pill */}
+          {/* Row 1: Brand + cbumlogo.png + Active Session Pill */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-3">
-              {/* Automatically loads /logo.png from public/ folder */}
+              {/* Automatically loads /cbumlogo.png from public/ folder */}
               {!logoError ? (
                 <img
-                  src="/logo.png"
+                  src="/cbumlogo.png"
                   alt="IRONLOG Logo"
                   onError={() => setLogoError(true)}
                   className="w-11 h-11 rounded-2xl object-cover shadow-md border border-slate-200 bg-white shrink-0"
