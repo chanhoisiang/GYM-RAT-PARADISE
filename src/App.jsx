@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import PTPortal from './pt/PTPortal';
 import {
   Dumbbell, Flame, Brain, TrendingUp, Play, Pause, RotateCcw,
   Plus, Trash2, Check, ChevronLeft, ChevronRight, Sparkles,
@@ -255,6 +256,7 @@ const calc1RM = (weight, reps) => {
 export default function App() {
   // Navigation & Active Date
   const [activeTab, setActiveTab] = useState('workout');
+  const [appMode, setAppMode] = useState('personal'); // 'personal' | 'pt_portal'
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [logoError, setLogoError] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);
@@ -1123,7 +1125,36 @@ export default function App() {
       {/* =====================================================================
           MAIN MOBILE CONTAINER (MAX-W-2XL FOR IPHONE / ANDROID ERGONOMICS)
       ===================================================================== */}
+      
       <main className="max-w-2xl mx-auto px-4 pt-4 space-y-5">
+        {/* Top Mode Switcher: Personal App vs PT & Gym Boss Portal */}
+        <div className="grid grid-cols-2 gap-2 bg-slate-200/80 p-1.5 rounded-2xl">
+          <button
+            onClick={() => setAppMode('personal')}
+            className={`py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition ${
+              appMode === 'personal'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-600'
+            }`}
+          >
+            💪 My Personal Gym App
+          </button>
+          <button
+            onClick={() => setAppMode('pt_portal')}
+            className={`py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition ${
+              appMode === 'pt_portal'
+                ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-xs'
+                : 'text-slate-600'
+            }`}
+          >
+            📋 PT & Gym Boss Portal
+          </button>
+        </div>
+
+        {appMode === 'pt_portal' ? (
+          <PTPortal showToast={showToast} />
+        ) : (
+          <>
         {/* ===================================================================
             TAB 1: WORKOUT LOGGER
         =================================================================== */}
@@ -2123,6 +2154,8 @@ export default function App() {
             </div>
           </div>
         )}
+        </>
+      )}
       </main>
 
       {/* =====================================================================
