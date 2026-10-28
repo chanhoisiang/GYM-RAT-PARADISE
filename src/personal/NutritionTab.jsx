@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Camera, Trash2, Sprout, Zap } from 'lucide-react';
+import { Camera, Trash2, Sprout, Zap, Plus, Edit3, Sparkles } from 'lucide-react';
 import { GYM_FOOD_STAPLES } from './gymConstants';
 import HydrationStreakBar from './HydrationStreakBar';
 import BeginnerPortionLogger from './BeginnerPortionLogger';
 import BeginnerFoodGuide from './BeginnerFoodGuide';
+import AddFoodModal from './AddFoodModal';
 
 export default function NutritionTab({
   selectedDate,
@@ -14,81 +15,41 @@ export default function NutritionTab({
   showToast,
 }) {
   const [nutritionMode, setNutritionMode] = useState('beginner');
-  const [aiFoodPrompt, setAiFoodPrompt] = useState('');
   const [selectedMealSlot, setSelectedMealSlot] = useState('Lunch');
-  const [aiFoodLoading, setAiFoodLoading] = useState(false);
-
-  const handleAnalyzeFoodWithAI = async () => {
-    if (!aiFoodPrompt.trim()) return;
-    setAiFoodLoading(true);
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    try {
-      if (apiKey && !apiKey.includes('your-gemini')) {
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    {
-                      text: `Estimate calories and macros for: "${aiFoodPrompt}". Return ONLY JSON: {"name": string, "cal": number, "p": number, "c": number, "f": number}.`,
-                    },
-                  ],
-                },
-              ],
-              generationConfig: { responseMimeType: 'application/json' },
-            }),
-          }
-        );
-        const data = await res.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (rawText) {
-          const parsed = JSON.parse(rawText);
-          setFoodLogs((prev) => [
-            {
-              id: `f-${Date.now()}`,
-              name: parsed.name || aiFoodPrompt,
-              slot: selectedMealSlot,
-              cal: Math.round(Number(parsed.cal) || 350),
-              p: Math.round(Number(parsed.p) || 25),
-              c: Math.round(Number(parsed.c) || 35),
-              f: Math.round(Number(parsed.f) || 10),
-            },
-            ...prev,
-          ]);
-          setAiFoodPrompt('');
-          showToast('✅ Added Food!');
-          setAiFoodLoading(false);
-          return;
-        }
-      }
-      await new Promise((r) => setTimeout(r, 500));
-      setFoodLogs((prev) => [
-        {
-          id: `f-${Date.now()}`,
-          name: aiFoodPrompt,
-          slot: selectedMealSlot,
-          cal: 480,
-          p: 35,
-          c: 50,
-          f: 14,
-        },
-        ...prev,
-      ]);
-      setAiFoodPrompt('');
-      showToast('✅ Added Food!');
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setAiFoodLoading(false);
-    }
-  };
+  const [showAddFoodModal, setShowAddFoodModal] = useState(false);
 
   return (
     <div className="space-y-6">
+      {/* =====================================================================
+          HERO ACTION BAR: + ADD FOOD (AI PHOTO SCAN OR MANUAL KEY-IN)
+      ===================================================================== */}
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-zinc-900 text-white p-5 rounded-3xl shadow-lg flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-14 h-14 rounded-2xl bg-orange-500/20 border border-orange-400/30 flex items-center justify-center text-3xl shrink-0">
+            📸
+          </div>
+          <div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-orange-500 text-white">
+              AI VISION + MANUAL LOG
+            </span>
+            <h3 className="text-xl sm:text-2xl font-extrabold mt-1">
+              Log Your Meal in Seconds
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300">
+              Take a photo of your food for AI analysis or key in calories manually
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setShowAddFoodModal(true)}
+          className="py-4 px-6 rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-extrabold text-base shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2.5 active:scale-95 transition shrink-0"
+        >
+          <Camera className="w-5 h-5" />
+          <span>+ Add Food (AI Photo / Manual)</span>
+        </button>
+      </div>
+
       {/* BIG 2-BUTTON MODE SWITCHER */}
       <div className="grid grid-cols-2 gap-3 bg-white p-2 rounded-3xl border border-slate-200 shadow-2xs">
         <button
@@ -203,24 +164,6 @@ export default function NutritionTab({
         </div>
       ) : (
         <div className="space-y-5">
-          {/* AI Quick Input */}
-          <div className="bg-white rounded-3xl p-5 border border-slate-200 flex flex-col sm:flex-row gap-3">
-            <input
-              type="text"
-              value={aiFoodPrompt}
-              onChange={(e) => setAiFoodPrompt(e.target.value)}
-              placeholder="Type food (e.g. 200g chicken breast + rice)..."
-              className="flex-1 px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-300 font-bold text-lg"
-            />
-            <button
-              onClick={handleAnalyzeFoodWithAI}
-              disabled={aiFoodLoading}
-              className="px-6 py-3.5 rounded-2xl bg-orange-600 text-white font-extrabold text-base"
-            >
-              {aiFoodLoading ? '...' : '✨ AI Add'}
-            </button>
-          </div>
-
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {GYM_FOOD_STAPLES.map((item) => (
               <button
@@ -229,7 +172,7 @@ export default function NutritionTab({
                   setFoodLogs((prev) => [{ id: `f-${Date.now()}`, ...item }, ...prev]);
                   showToast(`✅ Added ${item.name}`);
                 }}
-                className="bg-white p-4 rounded-3xl border-2 border-slate-200 hover:border-orange-400 text-center flex flex-col items-center"
+                className="bg-white p-4 rounded-3xl border-2 border-slate-200 hover:border-orange-400 text-center flex flex-col items-center transition active:scale-95"
               >
                 <span className="text-4xl mb-1">{item.icon}</span>
                 <div className="font-extrabold text-sm text-slate-900">{item.name}</div>
@@ -244,9 +187,18 @@ export default function NutritionTab({
 
       {/* TODAY'S EATEN FOOD LIST (LARGE FONTS) */}
       <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200 space-y-3">
-        <h3 className="text-xl font-extrabold text-slate-900">
-          🍽️ Eaten Today ({foodLogs.length})
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-extrabold text-slate-900">
+            🍽️ Eaten Today ({foodLogs.length})
+          </h3>
+          <button
+            onClick={() => setShowAddFoodModal(true)}
+            className="px-3.5 py-2 rounded-xl bg-orange-100 text-orange-800 font-extrabold text-xs flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" /> Add Food
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {foodLogs.map((log) => (
             <div
@@ -276,6 +228,15 @@ export default function NutritionTab({
           ))}
         </div>
       </div>
+
+      {/* ADD FOOD MODAL (AI PHOTO SCAN + MANUAL KEY-IN) */}
+      <AddFoodModal
+        isOpen={showAddFoodModal}
+        onClose={() => setShowAddFoodModal(false)}
+        defaultSlot={selectedMealSlot}
+        onAddFood={(newFood) => setFoodLogs((prev) => [newFood, ...prev])}
+        showToast={showToast}
+      />
     </div>
   );
 }
