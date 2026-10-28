@@ -346,6 +346,7 @@ export default function App() {
                 macroTotals={macroTotals}
                 targets={targets}
                 unit={unit}
+                showToast={showToast}
               />
             )}
 

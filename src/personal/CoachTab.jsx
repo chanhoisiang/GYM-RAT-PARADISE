@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Brain, Dumbbell } from 'lucide-react';
+import { Brain, Dumbbell, Video } from 'lucide-react';
 import { COACH_QUICK_PROMPTS } from './gymConstants';
+import FormCheckAnalyzer from './FormCheckAnalyzer';
 
 export default function CoachTab({
   currentWorkout,
@@ -8,7 +9,11 @@ export default function CoachTab({
   macroTotals,
   targets,
   unit,
+  showToast = () => {},
 }) {
+  // Sub-tab switcher: 'form_check' (AI Biomechanics Video/Photo) | 'chat_plates' (AI Chat & Barbell Plates)
+  const [coachSubTab, setCoachSubTab] = useState('form_check');
+
   const [targetBarbellWeight, setTargetBarbellWeight] = useState(100);
   const [barWeight, setBarWeight] = useState(20);
   const [coachMessages, setCoachMessages] = useState([
@@ -95,110 +100,142 @@ export default function CoachTab({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 text-white flex items-center justify-center">
-            <Brain className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-lg font-extrabold text-slate-900">AI Gym Personal Assistant</h3>
-            <p className="text-xs font-medium text-slate-500">Synced with your live sets, RPE & macros</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-          {COACH_QUICK_PROMPTS.map((q) => (
-            <button
-              key={q}
-              onClick={() => askAiCoach(q)}
-              className="px-3 py-1.5 rounded-xl bg-orange-50 text-orange-800 font-bold text-xs whitespace-nowrap border border-orange-200/60"
-            >
-              {q}
-            </button>
-          ))}
-        </div>
-        <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-          {coachMessages.map((m, i) => (
-            <div
-              key={i}
-              className={`p-3.5 rounded-2xl text-sm leading-relaxed font-medium ${
-                m.role === 'user' ? 'bg-slate-900 text-white ml-8' : 'bg-slate-100 text-slate-800 mr-4'
-              }`}
-            >
-              {m.text}
-            </div>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={coachInput}
-            onChange={(e) => setCoachInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && askAiCoach()}
-            placeholder="Ask about form, RPE, or meals..."
-            className="flex-1 h-12 px-4 rounded-2xl bg-slate-50 border border-slate-300 font-medium"
-          />
-          <button
-            onClick={() => askAiCoach()}
-            disabled={coachLoading}
-            className="h-12 px-5 rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-extrabold text-sm"
-          >
-            Ask
-          </button>
-        </div>
+    <div className="space-y-6">
+      {/* Top 2-Button Mode Switcher inside AI Coach Tab */}
+      <div className="grid grid-cols-2 gap-3 bg-white p-2 rounded-3xl border border-slate-200 shadow-2xs">
+        <button
+          onClick={() => setCoachSubTab('form_check')}
+          className={`py-3.5 rounded-2xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 transition ${
+            coachSubTab === 'form_check'
+              ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Video className="w-5 h-5" /> 🎥 AI Movement & Form Check
+        </button>
+
+        <button
+          onClick={() => setCoachSubTab('chat_plates')}
+          className={`py-3.5 rounded-2xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 transition ${
+            coachSubTab === 'chat_plates'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Brain className="w-5 h-5" /> 🧠 AI Coach Chat & Plates
+        </button>
       </div>
 
-      {/* Plate Calculator */}
-      <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-            <Dumbbell className="w-5 h-5 text-orange-600" /> Plate & Warm-Up Calculator
-          </h3>
-          <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
-            {[20, 15, 10].map((w) => (
+      {/* Render AI Form Analyzer OR AI Coach Chat + Plates */}
+      {coachSubTab === 'form_check' ? (
+        <FormCheckAnalyzer showToast={showToast} />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 text-white flex items-center justify-center">
+                <Brain className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900">AI Gym Personal Assistant</h3>
+                <p className="text-xs font-medium text-slate-500">Synced with your live sets, RPE & macros</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+              {COACH_QUICK_PROMPTS.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => askAiCoach(q)}
+                  className="px-3 py-1.5 rounded-xl bg-orange-50 text-orange-800 font-bold text-xs whitespace-nowrap border border-orange-200/60"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+            <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+              {coachMessages.map((m, i) => (
+                <div
+                  key={i}
+                  className={`p-3.5 rounded-2xl text-sm leading-relaxed font-medium ${
+                    m.role === 'user' ? 'bg-slate-900 text-white ml-8' : 'bg-slate-100 text-slate-800 mr-4'
+                  }`}
+                >
+                  {m.text}
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={coachInput}
+                onChange={(e) => setCoachInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && askAiCoach()}
+                placeholder="Ask about form, RPE, or meals..."
+                className="flex-1 h-12 px-4 rounded-2xl bg-slate-50 border border-slate-300 font-medium"
+              />
               <button
-                key={w}
-                onClick={() => setBarWeight(w)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
-                  barWeight === w ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
-                }`}
+                onClick={() => askAiCoach()}
+                disabled={coachLoading}
+                className="h-12 px-5 rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-extrabold text-sm"
               >
-                {w}kg Bar
+                Ask
               </button>
-            ))}
+            </div>
           </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase">Target Lift ({unit})</label>
-            <input
-              type="number"
-              step="2.5"
-              value={targetBarbellWeight}
-              onChange={(e) => setTargetBarbellWeight(e.target.value)}
-              className="w-full mt-1 h-12 px-3 rounded-2xl bg-slate-50 border border-slate-300 font-extrabold text-xl text-center"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase">Load Per Side</label>
-            <div className="mt-1 h-12 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center font-extrabold text-xl text-orange-700">
-              {plateBreakdown.perSide} {unit.toLowerCase()} / side
+
+          {/* Plate Calculator */}
+          <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                <Dumbbell className="w-5 h-5 text-orange-600" /> Plate & Warm-Up Calculator
+              </h3>
+              <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
+                {[20, 15, 10].map((w) => (
+                  <button
+                    key={w}
+                    onClick={() => setBarWeight(w)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                      barWeight === w ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
+                    }`}
+                  >
+                    {w}kg Bar
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase">Target Lift ({unit})</label>
+                <input
+                  type="number"
+                  step="2.5"
+                  value={targetBarbellWeight}
+                  onChange={(e) => setTargetBarbellWeight(e.target.value)}
+                  className="w-full mt-1 h-12 px-3 rounded-2xl bg-slate-50 border border-slate-300 font-extrabold text-xl text-center"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase">Load Per Side</label>
+                <div className="mt-1 h-12 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center font-extrabold text-xl text-orange-700">
+                  {plateBreakdown.perSide} {unit.toLowerCase()} / side
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-1.5 py-4 bg-slate-50 rounded-2xl border border-slate-200/80 min-h-28">
+              <div className="w-8 h-3 bg-slate-400 rounded-l-full" />
+              <div className="w-3 h-10 bg-slate-500 rounded-xs" />
+              {plateBreakdown.result.map((p, idx) =>
+                Array.from({ length: p.count }).map((_, i) => (
+                  <div key={`${idx}-${i}`} className={`${p.color} ${p.h} px-2 rounded-md flex items-center justify-center font-extrabold text-xs`}>
+                    {p.w}
+                  </div>
+                ))
+              )}
+              <div className="w-6 h-3 bg-slate-400 rounded-r-full" />
             </div>
           </div>
         </div>
-        <div className="flex items-center justify-center gap-1.5 py-4 bg-slate-50 rounded-2xl border border-slate-200/80 min-h-28">
-          <div className="w-8 h-3 bg-slate-400 rounded-l-full" />
-          <div className="w-3 h-10 bg-slate-500 rounded-xs" />
-          {plateBreakdown.result.map((p, idx) =>
-            Array.from({ length: p.count }).map((_, i) => (
-              <div key={`${idx}-${i}`} className={`${p.color} ${p.h} px-2 rounded-md flex items-center justify-center font-extrabold text-xs`}>
-                {p.w}
-              </div>
-            ))
-          )}
-          <div className="w-6 h-3 bg-slate-400 rounded-r-full" />
-        </div>
-      </div>
+      )}
     </div>
   );
 }
