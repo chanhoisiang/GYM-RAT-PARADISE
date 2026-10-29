@@ -1,6 +1,5 @@
 import React from 'react';
 
-// Exact Primary (Deep Red) & Secondary (Coral Pink) anatomical mapping for every exercise
 export const EXERCISE_MUSCLE_MAP = {
   'Barbell Bench Press': { primary: ['chest'], secondary: ['front_delts', 'triceps'] },
   'Incline Dumbbell Press': { primary: ['chest', 'front_delts'], secondary: ['triceps'] },
@@ -30,7 +29,6 @@ export const EXERCISE_MUSCLE_MAP = {
   'Standing Calf Raise': { primary: ['calves'], secondary: [] },
 };
 
-// Fallback if user adds a custom exercise name
 export function getExerciseMuscles(exerciseName = '', fallbackMuscle = 'Chest') {
   if (EXERCISE_MUSCLE_MAP[exerciseName]) {
     return EXERCISE_MUSCLE_MAP[exerciseName];
@@ -58,7 +56,6 @@ export function getExerciseMuscles(exerciseName = '', fallbackMuscle = 'Chest') 
     return { primary: ['triceps'], secondary: ['front_delts'] };
   }
 
-  // Fallback by muscle category
   const catMap = {
     Chest: { primary: ['chest'], secondary: ['front_delts', 'triceps'] },
     Back: { primary: ['lats', 'traps'], secondary: ['biceps', 'lower_back'] },
@@ -70,19 +67,71 @@ export function getExerciseMuscles(exerciseName = '', fallbackMuscle = 'Chest') 
   return catMap[fallbackMuscle] || { primary: ['chest'], secondary: ['triceps'] };
 }
 
+// Zoomed-in Anatomical Body Part Badges (Replaces unrelated animal/fruit emojis)
+export function MusclePartIcon({ muscle = 'Chest' }) {
+  return (
+    <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden p-1">
+      {muscle === 'Chest' && (
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          {/* Torso Outline */}
+          <path d="M20,20 L80,20 L75,85 L25,85 Z" fill="#52525B" stroke="#09090B" strokeWidth="4" />
+          {/* Highlighted Pectorals */}
+          <path d="M22,26 L48,30 L48,62 C36,64 25,60 20,48 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
+          <path d="M78,26 L52,30 L52,62 C64,64 75,60 80,48 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
+        </svg>
+      )}
+      {muscle === 'Shoulders' && (
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          <path d="M25,25 L75,25 L70,80 L30,80 Z" fill="#52525B" stroke="#09090B" strokeWidth="4" />
+          {/* Highlighted Left & Right Deltoid Caps */}
+          <path d="M26,24 C10,28 6,46 10,64 C20,66 26,58 29,46 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
+          <path d="M74,24 C90,28 94,46 90,64 C80,66 74,58 71,46 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
+        </svg>
+      )}
+      {muscle === 'Back' && (
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          {/* Traps & V-Taper Lats */}
+          <path d="M35,16 L50,12 L65,16 L50,48 Z" fill="#FF8A8A" stroke="#09090B" strokeWidth="3" />
+          <path d="M22,28 L48,45 L46,82 L28,68 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
+          <path d="M78,28 L52,45 L54,82 L72,68 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
+        </svg>
+      )}
+      {muscle === 'Legs' && (
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          {/* Highlighted Quads & Adductors */}
+          <path d="M24,14 C16,42 18,68 24,88 L44,88 C46,65 46,40 44,14 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
+          <path d="M76,14 C84,42 82,68 76,88 L56,88 C54,65 54,40 56,14 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
+        </svg>
+      )}
+      {muscle === 'Triceps' && (
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          {/* Arm Silhouette with Red Posterior Tricep Horseshoe */}
+          <path d="M35,15 L65,15 L62,85 L38,85 Z" fill="#52525B" stroke="#09090B" strokeWidth="3.5" />
+          <path d="M32,24 C22,42 22,62 32,74 L52,70 L52,26 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
+        </svg>
+      )}
+      {muscle === 'Biceps' && (
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          {/* Flexed Arm with Highlighted Bicep Peak */}
+          <path d="M25,22 L45,22 L45,75 L78,70 L78,86 L25,86 Z" fill="#52525B" stroke="#09090B" strokeWidth="3.5" />
+          <path d="M44,48 C48,30 68,30 74,48 C74,62 56,66 44,62 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
+        </svg>
+      )}
+    </div>
+  );
+}
+
 export default function AnatomyIllustration({
   exerciseName,
   fallbackMuscle,
   customPrimary = null,
   customSecondary = null,
-  size = 'md', // 'sm' | 'md' | 'lg'
+  size = 'md',
 }) {
   const mapped = getExerciseMuscles(exerciseName, fallbackMuscle);
   const primaryList = customPrimary || mapped.primary;
   const secondaryList = customSecondary || mapped.secondary;
 
-  // Exact colors from your reference image:
-  // Deep Crimson Red (#BD1E1E) for Primary, Coral Pink (#FF8A8A) for Secondary, Neutral Grey (#969696) for Inactive
   const fillFor = (id) => {
     if (primaryList.includes(id)) return '#BD1E1E';
     if (secondaryList.includes(id)) return '#FF8A8A';
@@ -103,20 +152,14 @@ export default function AnatomyIllustration({
         className="w-full h-full drop-shadow-2xs"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* ===================================================================
-            LEFT FIGURE: ANTERIOR (FRONT ANATOMY)
-        =================================================================== */}
+        {/* LEFT FIGURE: ANTERIOR (FRONT) */}
         <g transform="translate(10, 10)">
-          {/* Black Head, Neck, Hands & Feet Base Silhouette */}
           <path
             d="M85,12 C100,12 110,24 110,42 C110,58 102,70 96,76 L102,88 L68,88 L74,76 C68,70 60,58 60,42 C60,24 70,12 85,12 Z"
             fill="#0A0A0A"
           />
-          {/* Ears */}
           <ellipse cx="59" cy="45" rx="3" ry="6" fill="#0A0A0A" />
           <ellipse cx="111" cy="45" rx="3" ry="6" fill="#0A0A0A" />
-
-          {/* Traps (Front) */}
           <path
             d="M68,86 L46,96 L64,102 L75,88 Z M102,86 L124,96 L106,102 L95,88 Z"
             fill={fillFor('traps')}
@@ -124,8 +167,6 @@ export default function AnatomyIllustration({
             strokeWidth="3.5"
             strokeLinejoin="round"
           />
-
-          {/* Chest / Pectorals (Left & Right) */}
           <path
             d="M48,98 L84,102 L84,142 C70,145 55,142 46,128 Z"
             fill={fillFor('chest')}
@@ -140,8 +181,6 @@ export default function AnatomyIllustration({
             strokeWidth="4"
             strokeLinejoin="round"
           />
-
-          {/* Front & Side Deltoids (Shoulders) */}
           <path
             d="M46,96 C32,100 25,114 27,134 C34,136 42,132 47,124 Z"
             fill={fillFor('front_delts')}
@@ -156,8 +195,6 @@ export default function AnatomyIllustration({
             strokeWidth="4"
             strokeLinejoin="round"
           />
-
-          {/* Biceps (Left & Right) */}
           <path
             d="M27,135 C22,148 22,162 25,172 C33,174 40,168 43,154 L46,128 Z"
             fill={fillFor('biceps')}
@@ -172,8 +209,6 @@ export default function AnatomyIllustration({
             strokeWidth="4"
             strokeLinejoin="round"
           />
-
-          {/* Forearms (Left & Right) */}
           <path
             d="M24,173 C16,188 14,205 14,220 L25,222 C32,208 38,190 41,173 Z"
             fill={fillFor('forearms')}
@@ -188,28 +223,18 @@ export default function AnatomyIllustration({
             strokeWidth="4"
             strokeLinejoin="round"
           />
-
-          {/* Black Hands Silhouette */}
           <path d="M13,221 L6,236 L12,248 L24,244 L26,223 Z" fill="#0A0A0A" />
           <path d="M157,221 L164,236 L158,248 L146,244 L144,223 Z" fill="#0A0A0A" />
-
-          {/* Core / 6-Pack Abs & Obliques */}
           <g fill={fillFor('abs')} stroke="#0A0A0A" strokeWidth="3.8" strokeLinejoin="round">
-            {/* Upper Abs */}
             <rect x="64" y="143" width="19" height="17" rx="4" />
             <rect x="87" y="143" width="19" height="17" rx="4" />
-            {/* Mid Abs */}
             <rect x="64" y="162" width="19" height="17" rx="4" />
             <rect x="87" y="162" width="19" height="17" rx="4" />
-            {/* Lower Abs */}
             <path d="M65,181 L83,181 L83,210 L69,205 Z" />
             <path d="M105,181 L87,181 L87,210 L101,205 Z" />
-            {/* Side Obliques */}
             <path d="M48,134 L62,145 L62,198 L49,185 Z" />
             <path d="M122,134 L108,145 L108,198 L121,185 Z" />
           </g>
-
-          {/* Adductors (Inner Thighs) */}
           <path
             d="M66,208 L83,215 L77,275 L66,255 Z"
             fill={fillFor('adductors')}
@@ -222,55 +247,38 @@ export default function AnatomyIllustration({
             stroke="#0A0A0A"
             strokeWidth="3.5"
           />
-
-          {/* Quadriceps (Teardrop Vastus Medialis, Rectus Femoris, Vastus Lateralis) */}
           <g fill={fillFor('quads')} stroke="#0A0A0A" strokeWidth="4" strokeLinejoin="round">
-            {/* Left Leg Quads */}
             <path d="M48,192 C38,225 40,265 48,298 C56,296 62,282 65,260 L64,205 Z" />
             <path d="M64,208 C60,240 60,275 64,302 C72,302 78,292 78,275 L74,215 Z" />
-            {/* Right Leg Quads */}
             <path d="M122,192 C132,225 130,265 122,298 C114,296 108,282 105,260 L106,205 Z" />
             <path d="M106,208 C110,240 110,275 106,302 C98,302 92,292 92,275 L96,215 Z" />
           </g>
-
-          {/* Black Knee Joint & Shins Frame */}
           <path
             d="M48,296 L77,298 L74,318 L49,316 Z M93,298 L122,296 L121,316 L96,318 Z"
             fill="#0A0A0A"
           />
-
-          {/* Front Calves (Gastrocnemius / Tibialis Anterior) */}
           <g fill={fillFor('calves')} stroke="#0A0A0A" strokeWidth="3.8" strokeLinejoin="round">
-            {/* Inner Medial Strip (Highlighted in Squat reference) */}
             <path d="M67,318 C75,335 75,360 69,385 L62,385 C62,360 62,335 67,318 Z" />
             <path d="M103,318 C95,335 95,360 101,385 L108,385 C108,360 108,335 103,318 Z" />
           </g>
-          {/* Outer Shin Neutral */}
           <path
             d="M49,316 C43,340 46,368 53,392 L62,390 L64,318 Z M121,316 C127,340 124,368 117,392 L108,390 L106,318 Z"
             fill="#969696"
             stroke="#0A0A0A"
             strokeWidth="3.8"
           />
-
-          {/* Black Feet Silhouette */}
           <path d="M51,390 L38,412 L68,415 L66,390 Z" fill="#0A0A0A" />
           <path d="M119,390 L132,412 L102,415 L104,390 Z" fill="#0A0A0A" />
         </g>
 
-        {/* ===================================================================
-            RIGHT FIGURE: POSTERIOR (BACK ANATOMY)
-        =================================================================== */}
+        {/* RIGHT FIGURE: POSTERIOR (BACK) */}
         <g transform="translate(220, 10)">
-          {/* Black Head Silhouette */}
           <path
             d="M85,12 C100,12 110,24 110,42 C110,58 102,70 96,76 L102,86 L68,86 L74,76 C68,70 60,58 60,42 C60,24 70,12 85,12 Z"
             fill="#0A0A0A"
           />
           <ellipse cx="59" cy="45" rx="3" ry="6" fill="#0A0A0A" />
           <ellipse cx="111" cy="45" rx="3" ry="6" fill="#0A0A0A" />
-
-          {/* Traps (Upper & Mid Trapezius Diamond) */}
           <path
             d="M68,84 L45,96 L65,112 L83,148 L83,84 Z M102,84 L125,96 L105,112 L87,148 L87,84 Z"
             fill={fillFor('traps')}
@@ -278,8 +286,6 @@ export default function AnatomyIllustration({
             strokeWidth="4"
             strokeLinejoin="round"
           />
-
-          {/* Rear Delts (Posterior Shoulders) */}
           <path
             d="M45,96 C30,100 25,114 28,132 L49,124 L62,110 Z"
             fill={fillFor('rear_delts')}
@@ -294,8 +300,6 @@ export default function AnatomyIllustration({
             strokeWidth="4"
             strokeLinejoin="round"
           />
-
-          {/* Lats (Latissimus Dorsi V-Taper) */}
           <path
             d="M49,124 L65,114 L82,150 L68,185 L50,168 Z"
             fill={fillFor('lats')}
@@ -310,8 +314,6 @@ export default function AnatomyIllustration({
             strokeWidth="4"
             strokeLinejoin="round"
           />
-
-          {/* Lower Back (Erector Spinae / Lumbar) - Highlighted Red in Squat/Deadlift */}
           <path
             d="M82,150 L68,185 L82,202 Z M88,150 L102,185 L88,202 Z"
             fill={fillFor('lower_back')}
@@ -319,8 +321,6 @@ export default function AnatomyIllustration({
             strokeWidth="4"
             strokeLinejoin="round"
           />
-
-          {/* Triceps (Horseshoe Lateral & Long Head) */}
           <path
             d="M28,133 C22,148 22,164 25,174 L42,172 L48,126 Z"
             fill={fillFor('triceps')}
@@ -335,8 +335,6 @@ export default function AnatomyIllustration({
             strokeWidth="4"
             strokeLinejoin="round"
           />
-
-          {/* Forearms (Back) */}
           <path
             d="M24,175 C16,190 14,206 14,220 L25,222 C33,206 39,190 42,174 Z"
             fill={fillFor('forearms')}
@@ -351,12 +349,8 @@ export default function AnatomyIllustration({
             strokeWidth="4"
             strokeLinejoin="round"
           />
-
-          {/* Black Hands Silhouette */}
           <path d="M13,221 L6,236 L12,248 L24,244 L26,223 Z" fill="#0A0A0A" />
           <path d="M157,221 L164,236 L158,248 L146,244 L144,223 Z" fill="#0A0A0A" />
-
-          {/* Glutes (Gluteus Maximus Butterfly Shape) */}
           <path
             d="M50,186 L83,202 L83,240 C66,244 48,236 44,214 Z"
             fill={fillFor('glutes')}
@@ -371,16 +365,12 @@ export default function AnatomyIllustration({
             strokeWidth="4.2"
             strokeLinejoin="round"
           />
-
-          {/* Adductor Magnus / Inner Posterior Thigh */}
           <path
             d="M70,242 L83,242 L77,292 L69,282 Z M100,242 L87,242 L93,292 L101,282 Z"
             fill={fillFor('adductors')}
             stroke="#0A0A0A"
             strokeWidth="3.5"
           />
-
-          {/* Hamstrings (Biceps Femoris & Semitendinosus) */}
           <path
             d="M46,228 C42,254 45,280 51,302 L70,296 L69,242 Z"
             fill={fillFor('hamstrings')}
@@ -395,20 +385,14 @@ export default function AnatomyIllustration({
             strokeWidth="4"
             strokeLinejoin="round"
           />
-
-          {/* Calves (Two-Headed Gastrocnemius + Lower Soleus - Exact Coral Pink / Red Match) */}
           <g fill={fillFor('calves')} stroke="#0A0A0A" strokeWidth="3.8" strokeLinejoin="round">
-            {/* Left Calf */}
             <path d="M49,306 C42,324 43,344 50,356 L61,356 L61,306 Z" />
             <path d="M62,306 C70,324 69,344 62,356 L51,356 L62,306 Z" />
             <path d="M50,358 L64,358 L59,394 L54,394 Z" />
-            {/* Right Calf */}
             <path d="M109,306 C102,324 103,344 110,356 L121,356 L121,306 Z" />
             <path d="M121,306 C128,324 127,344 120,356 L109,356 L121,306 Z" />
             <path d="M106,358 L120,358 L116,394 L111,394 Z" />
           </g>
-
-          {/* Black Feet Silhouette */}
           <path d="M51,392 L38,412 L68,415 L66,392 Z" fill="#0A0A0A" />
           <path d="M119,392 L132,412 L102,415 L104,392 Z" fill="#0A0A0A" />
         </g>

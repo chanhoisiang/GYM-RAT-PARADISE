@@ -1,14 +1,14 @@
 import React, { useMemo } from 'react';
 import { Activity, Plus } from 'lucide-react';
-import AnatomyIllustration, { getExerciseMuscles } from './AnatomyIllustration';
+import AnatomyIllustration, { getExerciseMuscles, MusclePartIcon } from './AnatomyIllustration';
 
 const MUSCLE_GROUPS = [
-  { id: 'Chest', label: 'Chest (Pecs)', emoji: '🦍', targetSets: 8 },
-  { id: 'Shoulders', label: 'Shoulders (Delts)', emoji: '🥥', targetSets: 8 },
-  { id: 'Back', label: 'Back & Lats', emoji: '🦅', targetSets: 10 },
-  { id: 'Legs', label: 'Legs (Quads & Glutes)', emoji: '🦵', targetSets: 10 },
-  { id: 'Triceps', label: 'Triceps', emoji: '🐎', targetSets: 6 },
-  { id: 'Biceps', label: 'Biceps', emoji: '💪', targetSets: 6 },
+  { id: 'Chest', label: 'Chest (Pecs)', targetSets: 8 },
+  { id: 'Shoulders', label: 'Shoulders (Delts)', targetSets: 8 },
+  { id: 'Back', label: 'Back & Lats', targetSets: 10 },
+  { id: 'Legs', label: 'Legs (Quads & Glutes)', targetSets: 10 },
+  { id: 'Triceps', label: 'Triceps', targetSets: 6 },
+  { id: 'Biceps', label: 'Biceps', targetSets: 6 },
 ];
 
 export default function MuscleHeatmapCard({
@@ -16,7 +16,6 @@ export default function MuscleHeatmapCard({
   unit = 'KG',
   onQuickAddMuscle,
 }) {
-  // Aggregate all Primary & Secondary muscles across the workout
   const { primaryMuscles, secondaryMuscles, muscleStats } = useMemo(() => {
     const priSet = new Set();
     const secSet = new Set();
@@ -63,7 +62,6 @@ export default function MuscleHeatmapCard({
           </h3>
         </div>
 
-        {/* Color Legend Matching Reference Image */}
         <div className="flex items-center gap-4 text-xs font-extrabold bg-slate-50 px-4 py-2 rounded-2xl border border-slate-200">
           <span className="flex items-center gap-1.5">
             <span className="w-3.5 h-3.5 rounded-sm bg-[#BD1E1E] border border-black inline-block" /> Primary Target
@@ -90,7 +88,7 @@ export default function MuscleHeatmapCard({
           </span>
         </div>
 
-        {/* Right: Muscle Group Volume Breakdown */}
+        {/* Right: Muscle Group Volume Breakdown with Anatomical Badges */}
         <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3">
           {MUSCLE_GROUPS.map((m) => {
             const stat = muscleStats[m.id] || { plannedSets: 0, doneSets: 0, volume: 0 };
@@ -100,9 +98,9 @@ export default function MuscleHeatmapCard({
                 key={m.id}
                 className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col justify-between"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">{m.emoji}</span>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <MusclePartIcon muscle={m.id} />
                     <div>
                       <div className="font-extrabold text-sm text-slate-900">{m.label}</div>
                       <div className="text-xs font-bold text-slate-500">
@@ -113,7 +111,7 @@ export default function MuscleHeatmapCard({
                   {onQuickAddMuscle && (
                     <button
                       onClick={() => onQuickAddMuscle(m.id)}
-                      className="px-2.5 py-1 rounded-xl bg-white border border-slate-200 text-xs font-extrabold text-red-700 hover:bg-red-50 flex items-center gap-1"
+                      className="px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-extrabold text-red-700 hover:bg-red-50 flex items-center gap-1 shrink-0"
                     >
                       <Plus className="w-3.5 h-3.5" /> Add
                     </button>

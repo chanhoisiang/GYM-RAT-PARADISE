@@ -152,14 +152,14 @@ export default function App() {
     return saved
       ? JSON.parse(saved)
       : [
-          { date: '13 Oct', weight: 74.8 },
-          { date: '14 Oct', weight: 74.6 },
-          { date: '15 Oct', weight: 74.9 },
-          { date: '16 Oct', weight: 74.5 },
-          { date: '17 Oct', weight: 74.4 },
-          { date: '18 Oct', weight: 74.3 },
-          { date: '19 Oct', weight: 74.2 },
-        ];
+        { date: '13 Oct', weight: 74.8 },
+        { date: '14 Oct', weight: 74.6 },
+        { date: '15 Oct', weight: 74.9 },
+        { date: '16 Oct', weight: 74.5 },
+        { date: '17 Oct', weight: 74.4 },
+        { date: '18 Oct', weight: 74.3 },
+        { date: '19 Oct', weight: 74.2 },
+      ];
   });
 
   // Persist to LocalStorage
@@ -291,17 +291,15 @@ export default function App() {
         <div className="grid grid-cols-2 gap-2.5 bg-slate-200/80 p-1.5 rounded-2xl max-w-2xl mx-auto lg:max-w-none">
           <button
             onClick={() => setAppMode('personal')}
-            className={`py-3 rounded-xl font-extrabold text-xs sm:text-base transition ${
-              appMode === 'personal' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
-            }`}
+            className={`py-3 rounded-xl font-extrabold text-xs sm:text-base transition ${appMode === 'personal' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+              }`}
           >
             {t.personalApp}
           </button>
           <button
             onClick={() => setAppMode('pt_portal')}
-            className={`py-3 rounded-xl font-extrabold text-xs sm:text-base transition ${
-              appMode === 'pt_portal' ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-xs' : 'text-slate-600'
-            }`}
+            className={`py-3 rounded-xl font-extrabold text-xs sm:text-base transition ${appMode === 'pt_portal' ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-xs' : 'text-slate-600'
+              }`}
           >
             {t.ptPortal}
           </button>
@@ -320,7 +318,12 @@ export default function App() {
                 autoStartRest={autoStartRest}
                 setAutoStartRest={setAutoStartRest}
                 restPreset={restPreset}
+                setRestPreset={setRestPreset}
+                restSeconds={restSeconds}
                 setRestSeconds={setRestSeconds}
+                sessionSeconds={sessionSeconds}
+                sessionRunning={sessionRunning}
+                setSessionRunning={setSessionRunning}
                 syncSessionToSupabase={syncSessionToSupabase}
                 syncingCloud={syncingCloud}
                 setShowSqlModal={setShowSqlModal}
@@ -454,9 +457,8 @@ export default function App() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex flex-col items-center justify-center py-1.5 rounded-2xl transition ${
-                    active ? 'text-orange-600' : 'text-slate-400 hover:text-slate-600'
-                  }`}
+                  className={`flex flex-col items-center justify-center py-1.5 rounded-2xl transition ${active ? 'text-orange-600' : 'text-slate-400 hover:text-slate-600'
+                    }`}
                 >
                   <div className="flex items-center gap-1">
                     <Icon className="w-6 h-6" />
