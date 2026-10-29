@@ -6,7 +6,7 @@ import {
 // Personal Gym Modules
 import { TRANSLATIONS, WORKOUT_TEMPLATES, calc1RM } from './personal/gymConstants';
 import TopHeader from './personal/TopHeader';
-import WorkoutTab from './personal/WorkoutTab';
+import WorkoutTab, { useSwipeRightToClose } from './personal/WorkoutTab';
 import NutritionTab from './personal/NutritionTab';
 import CoachTab from './personal/CoachTab';
 import ProgressTab from './personal/ProgressTab';
@@ -37,6 +37,9 @@ export default function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS.EN;
+
+  // Swipe-right gesture hook to close the burger drawer
+  const burgerDrawerSwipe = useSwipeRightToClose(() => setShowBurgerDrawer(false));
 
   const showToast = (msg) => {
     setToastMsg(msg);
@@ -383,6 +386,7 @@ export default function App() {
         onQuickAction={handleBurgerQuickAction}
         onForceRefresh={handleForceRefresh}
         onOpenBackup={() => setShowSqlModal(true)}
+        swipeProps={burgerDrawerSwipe}
       />
 
       <AuthModal

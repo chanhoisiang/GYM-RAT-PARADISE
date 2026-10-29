@@ -1,402 +1,166 @@
 import React from 'react';
 
-export const EXERCISE_MUSCLE_MAP = {
-  'Barbell Bench Press': { primary: ['chest'], secondary: ['front_delts', 'triceps'] },
-  'Incline Dumbbell Press': { primary: ['chest', 'front_delts'], secondary: ['triceps'] },
-  'Smith Machine Incline Press': { primary: ['chest', 'front_delts'], secondary: ['triceps'] },
-  'Cable Chest Fly': { primary: ['chest'], secondary: ['front_delts'] },
-  'Weighted Chest Dips': { primary: ['chest', 'triceps'], secondary: ['front_delts'] },
-  'Overhead Barbell Press (OHP)': { primary: ['front_delts', 'side_delts'], secondary: ['triceps', 'traps', 'abs'] },
-  'Seated Dumbbell Shoulder Press': { primary: ['front_delts', 'side_delts'], secondary: ['triceps'] },
-  'Dumbbell Lateral Raise': { primary: ['side_delts'], secondary: ['front_delts', 'traps'] },
-  'Cable Rope Tricep Pushdown': { primary: ['triceps'], secondary: ['forearms'] },
-  'Overhead Cable Tricep Extension': { primary: ['triceps'], secondary: ['forearms'] },
-  'Skullcrushers (EZ-Bar)': { primary: ['triceps'], secondary: ['forearms'] },
-  'Lat Pulldown (Wide Grip)': { primary: ['lats'], secondary: ['biceps', 'rear_delts', 'traps', 'forearms'] },
-  'Barbell Bent-Over Row': { primary: ['lats', 'traps', 'lower_back'], secondary: ['biceps', 'rear_delts', 'hamstrings'] },
-  'Chest-Supported T-Bar Row': { primary: ['lats', 'traps'], secondary: ['biceps', 'rear_delts'] },
-  'Seated Cable Row': { primary: ['lats', 'traps'], secondary: ['biceps', 'rear_delts', 'lower_back'] },
-  'Face Pulls': { primary: ['rear_delts', 'traps'], secondary: ['biceps'] },
-  'Incline Dumbbell Curl': { primary: ['biceps'], secondary: ['forearms'] },
-  'Barbell EZ-Bar Curl': { primary: ['biceps'], secondary: ['forearms'] },
-  'Hammer Curls': { primary: ['biceps', 'forearms'], secondary: [] },
-  'Barbell Back Squat': { primary: ['quads', 'glutes', 'adductors', 'lower_back'], secondary: ['calves', 'hamstrings', 'abs'] },
-  'Smith Machine Squat': { primary: ['quads', 'glutes'], secondary: ['adductors', 'calves'] },
-  'Romanian Deadlift (RDL)': { primary: ['hamstrings', 'glutes', 'lower_back'], secondary: ['forearms', 'traps', 'calves'] },
-  'Leg Press (45°)': { primary: ['quads', 'glutes', 'adductors'], secondary: ['calves', 'hamstrings'] },
-  'Seated Leg Curl': { primary: ['hamstrings'], secondary: ['calves'] },
-  'Leg Extension': { primary: ['quads'], secondary: [] },
-  'Standing Calf Raise': { primary: ['calves'], secondary: [] },
-};
-
+// Automatically maps exercise names to their primary and secondary muscle groups
 export function getExerciseMuscles(exerciseName = '', fallbackMuscle = 'Chest') {
-  if (EXERCISE_MUSCLE_MAP[exerciseName]) {
-    return EXERCISE_MUSCLE_MAP[exerciseName];
-  }
-  const lower = exerciseName.toLowerCase();
-  if (lower.includes('squat') || lower.includes('lunge') || lower.includes('leg press')) {
-    return { primary: ['quads', 'glutes', 'adductors', 'lower_back'], secondary: ['calves', 'hamstrings'] };
-  }
-  if (lower.includes('deadlift') || lower.includes('rdl') || lower.includes('hip thrust')) {
-    return { primary: ['hamstrings', 'glutes', 'lower_back'], secondary: ['traps', 'forearms', 'calves'] };
-  }
-  if (lower.includes('bench') || lower.includes('chest') || lower.includes('fly') || lower.includes('push')) {
-    return { primary: ['chest'], secondary: ['front_delts', 'triceps'] };
-  }
-  if (lower.includes('row') || lower.includes('pull') || lower.includes('lat')) {
-    return { primary: ['lats', 'traps'], secondary: ['biceps', 'rear_delts', 'lower_back'] };
-  }
-  if (lower.includes('shoulder') || lower.includes('ohp') || lower.includes('lateral')) {
-    return { primary: ['front_delts', 'side_delts'], secondary: ['triceps', 'traps'] };
-  }
-  if (lower.includes('curl') || lower.includes('bicep')) {
-    return { primary: ['biceps'], secondary: ['forearms'] };
-  }
-  if (lower.includes('tricep') || lower.includes('extension') || lower.includes('dip')) {
-    return { primary: ['triceps'], secondary: ['front_delts'] };
-  }
-
-  const catMap = {
-    Chest: { primary: ['chest'], secondary: ['front_delts', 'triceps'] },
-    Back: { primary: ['lats', 'traps'], secondary: ['biceps', 'lower_back'] },
-    Shoulders: { primary: ['front_delts', 'side_delts'], secondary: ['rear_delts', 'traps'] },
-    Legs: { primary: ['quads', 'glutes', 'adductors'], secondary: ['hamstrings', 'calves'] },
-    Triceps: { primary: ['triceps'], secondary: ['forearms'] },
-    Biceps: { primary: ['biceps'], secondary: ['forearms'] },
-  };
-  return catMap[fallbackMuscle] || { primary: ['chest'], secondary: ['triceps'] };
+  const n = exerciseName.toLowerCase();
+  if (n.includes('incline')) return { primary: ['upper_chest'], secondary: ['front_delts', 'triceps'] };
+  if (n.includes('bench') || n.includes('chest') || n.includes('fly') || n.includes('push'))
+    return { primary: ['chest'], secondary: ['triceps', 'front_delts'] };
+  if (n.includes('squat') || n.includes('leg press') || n.includes('extension'))
+    return { primary: ['quads', 'glutes'], secondary: ['hamstrings'] };
+  if (n.includes('deadlift') || n.includes('rdl') || n.includes('leg curl'))
+    return { primary: ['hamstrings', 'glutes'], secondary: ['lower_back'] };
+  if (n.includes('row') || n.includes('pull') || n.includes('lat'))
+    return { primary: ['lats', 'upper_back'], secondary: ['biceps'] };
+  if (n.includes('overhead') || n.includes('shoulder') || n.includes('lateral'))
+    return { primary: ['shoulders'], secondary: ['triceps'] };
+  if (n.includes('curl')) return { primary: ['biceps'], secondary: ['forearms'] };
+  if (n.includes('tricep') || n.includes('pushdown') || n.includes('dip'))
+    return { primary: ['triceps'], secondary: ['chest'] };
+  return { primary: [fallbackMuscle.toLowerCase()], secondary: [] };
 }
 
-// Zoomed-in Anatomical Body Part Badges (Replaces unrelated animal/fruit emojis)
-export function MusclePartIcon({ muscle = 'Chest' }) {
+// Renders the 3D-style exercise movement illustrations
+export default function AnatomyIllustration({
+  exerciseName = '',
+  imageUrl = null,
+  size = 'md',
+}) {
+  const dim = size === 'lg' ? 'w-full h-full' : size === 'sm' ? 'w-12 h-12' : 'w-16 h-16';
+
+  // If a custom image URL is provided in the exercise data, use it directly
+  if (imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt={exerciseName}
+        className={`${dim} object-contain rounded-xl`}
+      />
+    );
+  }
+
+  const name = exerciseName.toLowerCase();
+
+  // 1. Incline Press Illustration
+  if (name.includes('incline')) {
+    return (
+      <svg viewBox="0 0 120 100" className={dim} fill="none">
+        <path d="M75 15 L82 88 M88 20 L95 88" stroke="#CBD5E1" strokeWidth="3.5" strokeLinecap="round" />
+        <path d="M25 85 L85 85 M35 85 L40 70 M72 85 L72 52" stroke="#64748B" strokeWidth="3" />
+        <path d="M26 72 L48 72 L78 42" stroke="#1E293B" strokeWidth="6" strokeLinecap="round" />
+        <path d="M28 70 L16 86 M46 68 L68 46" stroke="#94A3B8" strokeWidth="6" strokeLinecap="round" />
+        <circle cx="75" cy="36" r="6.5" fill="#94A3B8" />
+        <path d="M56 58 Q65 48 71 46" stroke="#EA580C" strokeWidth="7" strokeLinecap="round" />
+        <path d="M64 50 L62 26" stroke="#EF4444" strokeWidth="4.5" strokeLinecap="round" />
+        <line x1="38" y1="24" x2="96" y2="24" stroke="#334155" strokeWidth="3" />
+        <ellipse cx="46" cy="24" rx="5" ry="12" fill="#0F172A" />
+        <ellipse cx="86" cy="24" rx="5" ry="12" fill="#0F172A" />
+      </svg>
+    );
+  }
+
+  // 2. Flat Bench Press Illustration
+  if (name.includes('bench') || name.includes('chest') || name.includes('press')) {
+    return (
+      <svg viewBox="0 0 120 100" className={dim} fill="none">
+        <path d="M72 16 L78 82 M90 12 L96 76" stroke="#CBD5E1" strokeWidth="3.5" strokeLinecap="round" />
+        <path d="M26 68 L26 88 M76 58 L76 80" stroke="#94A3B8" strokeWidth="3.5" />
+        <path d="M18 66 L84 52" stroke="#1E293B" strokeWidth="8" strokeLinecap="round" />
+        <path d="M22 64 L12 85" stroke="#94A3B8" strokeWidth="6" strokeLinecap="round" />
+        <path d="M25 61 L72 51" stroke="#CBD5E1" strokeWidth="8" strokeLinecap="round" />
+        <circle cx="81" cy="47" r="6" fill="#94A3B8" />
+        <path d="M52 55 Q64 47 73 50" fill="#DC2626" stroke="#DC2626" strokeWidth="6" strokeLinecap="round" />
+        <path d="M66 51 L64 30" stroke="#EA580C" strokeWidth="5" strokeLinecap="round" />
+        <line x1="36" y1="24" x2="102" y2="38" stroke="#334155" strokeWidth="3.5" />
+        <ellipse cx="45" cy="26" rx="6" ry="13" fill="#1E293B" />
+        <ellipse cx="90" cy="35" rx="6" ry="13" fill="#1E293B" />
+      </svg>
+    );
+  }
+
+  // 3. Squat / Leg Exercise Illustration
+  if (name.includes('squat') || name.includes('leg') || name.includes('lunge')) {
+    return (
+      <svg viewBox="0 0 120 100" className={dim} fill="none">
+        <path d="M30 12 L30 90 M88 12 L88 90 M22 90 L98 90" stroke="#CBD5E1" strokeWidth="3.5" strokeLinecap="round" />
+        <circle cx="60" cy="22" r="6.5" fill="#94A3B8" />
+        <path d="M58 30 L48 56" stroke="#94A3B8" strokeWidth="8" strokeLinecap="round" />
+        <path d="M46 56 L68 62" stroke="#DC2626" strokeWidth="8" strokeLinecap="round" />
+        <path d="M68 62 L62 86" stroke="#94A3B8" strokeWidth="6" strokeLinecap="round" />
+        <line x1="20" y1="30" x2="100" y2="30" stroke="#1E293B" strokeWidth="3.5" />
+        <rect x="26" y="18" width="6" height="24" rx="2" fill="#0F172A" />
+        <rect x="88" y="18" width="6" height="24" rx="2" fill="#0F172A" />
+      </svg>
+    );
+  }
+
+  // 4. Pull / Back / Row Illustration
+  if (name.includes('pull') || name.includes('row') || name.includes('lat') || name.includes('back')) {
+    return (
+      <svg viewBox="0 0 120 100" className={dim} fill="none">
+        <path d="M88 10 L88 90 M50 12 L88 12" stroke="#CBD5E1" strokeWidth="3.5" strokeLinecap="round" />
+        <line x1="58" y1="12" x2="58" y2="34" stroke="#64748B" strokeWidth="2" />
+        <path d="M36 36 L80 36" stroke="#1E293B" strokeWidth="3.5" strokeLinecap="round" />
+        <circle cx="58" cy="45" r="6" fill="#94A3B8" />
+        <path d="M48 54 L58 76 L68 54 Z" fill="#DC2626" />
+        <path d="M48 55 L40 36 M68 55 L76 36" stroke="#EA580C" strokeWidth="4.5" strokeLinecap="round" />
+        <path d="M42 78 L74 78 M58 78 L58 90" stroke="#334155" strokeWidth="4" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  // 5. Default Dumbbell / Arm / Shoulder Illustration
   return (
-    <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden p-1">
-      {muscle === 'Chest' && (
-        <svg viewBox="0 0 100 100" className="w-full h-full">
-          {/* Torso Outline */}
-          <path d="M20,20 L80,20 L75,85 L25,85 Z" fill="#52525B" stroke="#09090B" strokeWidth="4" />
-          {/* Highlighted Pectorals */}
-          <path d="M22,26 L48,30 L48,62 C36,64 25,60 20,48 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
-          <path d="M78,26 L52,30 L52,62 C64,64 75,60 80,48 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
-        </svg>
-      )}
-      {muscle === 'Shoulders' && (
-        <svg viewBox="0 0 100 100" className="w-full h-full">
-          <path d="M25,25 L75,25 L70,80 L30,80 Z" fill="#52525B" stroke="#09090B" strokeWidth="4" />
-          {/* Highlighted Left & Right Deltoid Caps */}
-          <path d="M26,24 C10,28 6,46 10,64 C20,66 26,58 29,46 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
-          <path d="M74,24 C90,28 94,46 90,64 C80,66 74,58 71,46 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
-        </svg>
-      )}
-      {muscle === 'Back' && (
-        <svg viewBox="0 0 100 100" className="w-full h-full">
-          {/* Traps & V-Taper Lats */}
-          <path d="M35,16 L50,12 L65,16 L50,48 Z" fill="#FF8A8A" stroke="#09090B" strokeWidth="3" />
-          <path d="M22,28 L48,45 L46,82 L28,68 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
-          <path d="M78,28 L52,45 L54,82 L72,68 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
-        </svg>
-      )}
-      {muscle === 'Legs' && (
-        <svg viewBox="0 0 100 100" className="w-full h-full">
-          {/* Highlighted Quads & Adductors */}
-          <path d="M24,14 C16,42 18,68 24,88 L44,88 C46,65 46,40 44,14 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
-          <path d="M76,14 C84,42 82,68 76,88 L56,88 C54,65 54,40 56,14 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
-        </svg>
-      )}
-      {muscle === 'Triceps' && (
-        <svg viewBox="0 0 100 100" className="w-full h-full">
-          {/* Arm Silhouette with Red Posterior Tricep Horseshoe */}
-          <path d="M35,15 L65,15 L62,85 L38,85 Z" fill="#52525B" stroke="#09090B" strokeWidth="3.5" />
-          <path d="M32,24 C22,42 22,62 32,74 L52,70 L52,26 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
-        </svg>
-      )}
-      {muscle === 'Biceps' && (
-        <svg viewBox="0 0 100 100" className="w-full h-full">
-          {/* Flexed Arm with Highlighted Bicep Peak */}
-          <path d="M25,22 L45,22 L45,75 L78,70 L78,86 L25,86 Z" fill="#52525B" stroke="#09090B" strokeWidth="3.5" />
-          <path d="M44,48 C48,30 68,30 74,48 C74,62 56,66 44,62 Z" fill="#BD1E1E" stroke="#09090B" strokeWidth="3.5" />
-        </svg>
-      )}
-    </div>
+    <svg viewBox="0 0 120 100" className={dim} fill="none">
+      <circle cx="60" cy="24" r="7" fill="#94A3B8" />
+      <path d="M48 36 L72 36 L68 78 L52 78 Z" fill="#CBD5E1" />
+      <circle cx="45" cy="40" r="6" fill="#DC2626" />
+      <circle cx="75" cy="40" r="6" fill="#DC2626" />
+      <path d="M44 42 L34 26 M76 42 L86 26" stroke="#EA580C" strokeWidth="5.5" strokeLinecap="round" />
+      <path d="M24 24 L42 24 M78 24 L96 24" stroke="#0F172A" strokeWidth="5" strokeLinecap="round" />
+    </svg>
   );
 }
 
-export default function AnatomyIllustration({
-  exerciseName,
-  fallbackMuscle,
-  customPrimary = null,
-  customSecondary = null,
-  size = 'md',
-}) {
-  const mapped = getExerciseMuscles(exerciseName, fallbackMuscle);
-  const primaryList = customPrimary || mapped.primary;
-  const secondaryList = customSecondary || mapped.secondary;
+// Icon renderer for the Heatmap component
+export function MusclePartIcon({ name, isActive }) {
+  const color = isActive ? '#EA580C' : '#CBD5E1';
 
-  const fillFor = (id) => {
-    if (primaryList.includes(id)) return '#BD1E1E';
-    if (secondaryList.includes(id)) return '#FF8A8A';
-    return '#969696';
+  const renderShape = () => {
+    const n = name.toLowerCase();
+    if (n.includes('chest') || n.includes('pecs')) {
+      return <path d="M12 4 C 18 4, 20 8, 20 12 C 20 16, 12 20, 12 20 C 12 20, 4 16, 4 12 C 4 8, 6 4, 12 4 Z" fill={color} />;
+    }
+    if (n.includes('back') || n.includes('lat')) {
+      return <path d="M12 2 L18 10 L14 22 L10 22 L6 10 Z" fill={color} />;
+    }
+    if (n.includes('leg') || n.includes('quad') || n.includes('ham') || n.includes('calf') || n.includes('glute')) {
+      return <path d="M8 2 L16 2 L14 22 L10 22 Z" fill={color} />;
+    }
+    if (n.includes('shoulder') || n.includes('delt')) {
+      return <circle cx="12" cy="12" r="8" fill={color} />;
+    }
+    if (n.includes('arm') || n.includes('bicep') || n.includes('tricep') || n.includes('forearm')) {
+      return <rect x="8" y="2" width="8" height="20" rx="4" fill={color} />;
+    }
+    if (n.includes('core') || n.includes('abs')) {
+      return (
+        <g fill={color}>
+          <rect x="8" y="4" width="3" height="4" rx="1" />
+          <rect x="13" y="4" width="3" height="4" rx="1" />
+          <rect x="8" y="10" width="3" height="4" rx="1" />
+          <rect x="13" y="10" width="3" height="4" rx="1" />
+          <rect x="8" y="16" width="3" height="4" rx="1" />
+          <rect x="13" y="16" width="3" height="4" rx="1" />
+        </g>
+      );
+    }
+    return <circle cx="12" cy="12" r="8" fill={color} />;
   };
 
-  const sizeClasses =
-    size === 'sm'
-      ? 'w-28 h-28'
-      : size === 'lg'
-      ? 'w-64 h-64 sm:w-72 sm:h-72'
-      : 'w-40 h-40 sm:w-44 sm:h-44';
-
   return (
-    <div className={`inline-flex items-center justify-center select-none ${sizeClasses}`}>
-      <svg
-        viewBox="0 0 420 440"
-        className="w-full h-full drop-shadow-2xs"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* LEFT FIGURE: ANTERIOR (FRONT) */}
-        <g transform="translate(10, 10)">
-          <path
-            d="M85,12 C100,12 110,24 110,42 C110,58 102,70 96,76 L102,88 L68,88 L74,76 C68,70 60,58 60,42 C60,24 70,12 85,12 Z"
-            fill="#0A0A0A"
-          />
-          <ellipse cx="59" cy="45" rx="3" ry="6" fill="#0A0A0A" />
-          <ellipse cx="111" cy="45" rx="3" ry="6" fill="#0A0A0A" />
-          <path
-            d="M68,86 L46,96 L64,102 L75,88 Z M102,86 L124,96 L106,102 L95,88 Z"
-            fill={fillFor('traps')}
-            stroke="#0A0A0A"
-            strokeWidth="3.5"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M48,98 L84,102 L84,142 C70,145 55,142 46,128 Z"
-            fill={fillFor('chest')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M122,98 L86,102 L86,142 C100,145 115,142 124,128 Z"
-            fill={fillFor('chest')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M46,96 C32,100 25,114 27,134 C34,136 42,132 47,124 Z"
-            fill={fillFor('front_delts')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M124,96 C138,100 145,114 143,134 C136,136 128,132 123,124 Z"
-            fill={fillFor('front_delts')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M27,135 C22,148 22,162 25,172 C33,174 40,168 43,154 L46,128 Z"
-            fill={fillFor('biceps')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M143,135 C148,148 148,162 145,172 C137,174 130,168 127,154 L124,128 Z"
-            fill={fillFor('biceps')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M24,173 C16,188 14,205 14,220 L25,222 C32,208 38,190 41,173 Z"
-            fill={fillFor('forearms')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M146,173 C154,188 156,205 156,220 L145,222 C138,208 132,190 129,173 Z"
-            fill={fillFor('forearms')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path d="M13,221 L6,236 L12,248 L24,244 L26,223 Z" fill="#0A0A0A" />
-          <path d="M157,221 L164,236 L158,248 L146,244 L144,223 Z" fill="#0A0A0A" />
-          <g fill={fillFor('abs')} stroke="#0A0A0A" strokeWidth="3.8" strokeLinejoin="round">
-            <rect x="64" y="143" width="19" height="17" rx="4" />
-            <rect x="87" y="143" width="19" height="17" rx="4" />
-            <rect x="64" y="162" width="19" height="17" rx="4" />
-            <rect x="87" y="162" width="19" height="17" rx="4" />
-            <path d="M65,181 L83,181 L83,210 L69,205 Z" />
-            <path d="M105,181 L87,181 L87,210 L101,205 Z" />
-            <path d="M48,134 L62,145 L62,198 L49,185 Z" />
-            <path d="M122,134 L108,145 L108,198 L121,185 Z" />
-          </g>
-          <path
-            d="M66,208 L83,215 L77,275 L66,255 Z"
-            fill={fillFor('adductors')}
-            stroke="#0A0A0A"
-            strokeWidth="3.5"
-          />
-          <path
-            d="M104,208 L87,215 L93,275 L104,255 Z"
-            fill={fillFor('adductors')}
-            stroke="#0A0A0A"
-            strokeWidth="3.5"
-          />
-          <g fill={fillFor('quads')} stroke="#0A0A0A" strokeWidth="4" strokeLinejoin="round">
-            <path d="M48,192 C38,225 40,265 48,298 C56,296 62,282 65,260 L64,205 Z" />
-            <path d="M64,208 C60,240 60,275 64,302 C72,302 78,292 78,275 L74,215 Z" />
-            <path d="M122,192 C132,225 130,265 122,298 C114,296 108,282 105,260 L106,205 Z" />
-            <path d="M106,208 C110,240 110,275 106,302 C98,302 92,292 92,275 L96,215 Z" />
-          </g>
-          <path
-            d="M48,296 L77,298 L74,318 L49,316 Z M93,298 L122,296 L121,316 L96,318 Z"
-            fill="#0A0A0A"
-          />
-          <g fill={fillFor('calves')} stroke="#0A0A0A" strokeWidth="3.8" strokeLinejoin="round">
-            <path d="M67,318 C75,335 75,360 69,385 L62,385 C62,360 62,335 67,318 Z" />
-            <path d="M103,318 C95,335 95,360 101,385 L108,385 C108,360 108,335 103,318 Z" />
-          </g>
-          <path
-            d="M49,316 C43,340 46,368 53,392 L62,390 L64,318 Z M121,316 C127,340 124,368 117,392 L108,390 L106,318 Z"
-            fill="#969696"
-            stroke="#0A0A0A"
-            strokeWidth="3.8"
-          />
-          <path d="M51,390 L38,412 L68,415 L66,390 Z" fill="#0A0A0A" />
-          <path d="M119,390 L132,412 L102,415 L104,390 Z" fill="#0A0A0A" />
-        </g>
-
-        {/* RIGHT FIGURE: POSTERIOR (BACK) */}
-        <g transform="translate(220, 10)">
-          <path
-            d="M85,12 C100,12 110,24 110,42 C110,58 102,70 96,76 L102,86 L68,86 L74,76 C68,70 60,58 60,42 C60,24 70,12 85,12 Z"
-            fill="#0A0A0A"
-          />
-          <ellipse cx="59" cy="45" rx="3" ry="6" fill="#0A0A0A" />
-          <ellipse cx="111" cy="45" rx="3" ry="6" fill="#0A0A0A" />
-          <path
-            d="M68,84 L45,96 L65,112 L83,148 L83,84 Z M102,84 L125,96 L105,112 L87,148 L87,84 Z"
-            fill={fillFor('traps')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M45,96 C30,100 25,114 28,132 L49,124 L62,110 Z"
-            fill={fillFor('rear_delts')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M125,96 C140,100 145,114 142,132 L121,124 L108,110 Z"
-            fill={fillFor('rear_delts')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M49,124 L65,114 L82,150 L68,185 L50,168 Z"
-            fill={fillFor('lats')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M121,124 L105,114 L88,150 L102,185 L120,168 Z"
-            fill={fillFor('lats')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M82,150 L68,185 L82,202 Z M88,150 L102,185 L88,202 Z"
-            fill={fillFor('lower_back')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M28,133 C22,148 22,164 25,174 L42,172 L48,126 Z"
-            fill={fillFor('triceps')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M142,133 C148,148 148,164 145,174 L128,172 L122,126 Z"
-            fill={fillFor('triceps')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M24,175 C16,190 14,206 14,220 L25,222 C33,206 39,190 42,174 Z"
-            fill={fillFor('forearms')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M146,175 C154,190 156,206 156,220 L145,222 C137,206 131,190 128,174 Z"
-            fill={fillFor('forearms')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path d="M13,221 L6,236 L12,248 L24,244 L26,223 Z" fill="#0A0A0A" />
-          <path d="M157,221 L164,236 L158,248 L146,244 L144,223 Z" fill="#0A0A0A" />
-          <path
-            d="M50,186 L83,202 L83,240 C66,244 48,236 44,214 Z"
-            fill={fillFor('glutes')}
-            stroke="#0A0A0A"
-            strokeWidth="4.2"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M120,186 L87,202 L87,240 C104,244 122,236 126,214 Z"
-            fill={fillFor('glutes')}
-            stroke="#0A0A0A"
-            strokeWidth="4.2"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M70,242 L83,242 L77,292 L69,282 Z M100,242 L87,242 L93,292 L101,282 Z"
-            fill={fillFor('adductors')}
-            stroke="#0A0A0A"
-            strokeWidth="3.5"
-          />
-          <path
-            d="M46,228 C42,254 45,280 51,302 L70,296 L69,242 Z"
-            fill={fillFor('hamstrings')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M124,228 C128,254 125,280 119,302 L100,296 L101,242 Z"
-            fill={fillFor('hamstrings')}
-            stroke="#0A0A0A"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <g fill={fillFor('calves')} stroke="#0A0A0A" strokeWidth="3.8" strokeLinejoin="round">
-            <path d="M49,306 C42,324 43,344 50,356 L61,356 L61,306 Z" />
-            <path d="M62,306 C70,324 69,344 62,356 L51,356 L62,306 Z" />
-            <path d="M50,358 L64,358 L59,394 L54,394 Z" />
-            <path d="M109,306 C102,324 103,344 110,356 L121,356 L121,306 Z" />
-            <path d="M121,306 C128,324 127,344 120,356 L109,356 L121,306 Z" />
-            <path d="M106,358 L120,358 L116,394 L111,394 Z" />
-          </g>
-          <path d="M51,392 L38,412 L68,415 L66,392 Z" fill="#0A0A0A" />
-          <path d="M119,392 L132,412 L102,415 L104,392 Z" fill="#0A0A0A" />
-        </g>
-      </svg>
-    </div>
+    <svg viewBox="0 0 24 24" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+      {renderShape()}
+    </svg>
   );
 }

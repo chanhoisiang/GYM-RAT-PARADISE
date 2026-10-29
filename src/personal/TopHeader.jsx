@@ -24,7 +24,7 @@ export default function TopHeader({
           <div className="flex items-center gap-3">
             {!logoError ? (
               <img
-                src="/logo.png"
+                src="/cbumlogo.png"
                 alt="IRONLOG Logo"
                 onError={() => setLogoError(true)}
                 className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl object-cover shadow-md border border-slate-200 bg-white shrink-0"
@@ -37,7 +37,7 @@ export default function TopHeader({
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
-                  IRONLOG
+                  铁之意志
                 </h1>
                 <span
                   className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full hidden sm:inline-flex items-center gap-1 ${

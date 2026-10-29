@@ -17,12 +17,21 @@ export default function SuperBurgerDrawer({
   onQuickAction,
   onForceRefresh,
   onOpenBackup,
+  swipeProps // <-- 1. Make sure you receive it here
 }) {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-end">
-      <div className="bg-white w-full max-w-sm h-full p-5 flex flex-col justify-between overflow-y-auto shadow-2xl border-l border-slate-200">
+      {/* Click outside to close overlay */}
+      <div className="absolute inset-0" onClick={onClose} />
+
+      {/* 👇 2. ATTACH SWIPE PROPS HERE to the actual white drawer panel */}
+      <div
+        {...swipeProps}
+        style={swipeProps?.style} // <-- 3. Don't forget the style prop for the smooth drag animation!
+        className="relative bg-white w-full max-w-sm h-full p-5 flex flex-col justify-between overflow-y-auto shadow-2xl border-l border-slate-200 transition-transform"
+      >
         <div className="space-y-5">
           {/* Top Drawer Header */}
           <div className="flex items-center justify-between pb-3 border-b border-slate-200">
@@ -49,7 +58,8 @@ export default function SuperBurgerDrawer({
 
           {/* User Profile & Auth Card */}
           <div className="p-4 rounded-3xl bg-gradient-to-br from-slate-900 to-zinc-800 text-white space-y-3">
-            <div className="flex items-center justify-between">
+             {/* ... rest of your existing SuperBurgerDrawer content ... */}
+             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-2xl bg-orange-500/20 border border-orange-400/40 flex items-center justify-center font-extrabold text-lg text-orange-300">
                   {user?.name?.[0]?.toUpperCase() || 'G'}

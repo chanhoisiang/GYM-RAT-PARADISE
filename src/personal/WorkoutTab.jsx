@@ -1,11 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  Zap, Database, CheckCircle2, Plus, Trash2, Check, X, Search,
-  Clock, Play, Pause, RotateCcw, Edit3
+  Database, CheckCircle2, Plus, Trash2, Check, X, Search,
+  Clock, Play, Pause, Edit3, Flame, ChevronDown, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { WORKOUT_TEMPLATES, EXERCISE_LIBRARY, calc1RM, formatDuration } from './gymConstants';
 import MuscleHeatmapCard from './MuscleHeatmapCard';
-import AnatomyIllustration, { getExerciseMuscles } from './AnatomyIllustration';
+import AnatomyIllustration from './AnatomyIllustration';
+
+/**
+ * Custom Gesture Hook: Swipe Right to Return / Close Drawer or Modal
+ */
+export function useSwipeRightToClose(onClose, threshold = 65) {
+  const startX = useRef(null);
+  const startY = useRef(null);
+  const [dragOffset, setDragOffset] = useState(0);
+
+  const onTouchStart = (e) => {
+    startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
+  };
+
+  const onTouchMove = (e) => {
+    if (startX.current === null || startY.current === null) return;
+    const dx = e.touches[0].clientX - startX.current;
+    const dy = Math.abs(e.touches[0].clientY - startY.current);
+    // Only track horizontal right swipes
+    if (dx > 0 && dx > dy) {
+      setDragOffset(dx);
+    }
+  };
+
+  const onTouchEnd = () => {
+    if (dragOffset > threshold && onClose) {
+      onClose();
+    }
+    setDragOffset(0);
+    startX.current = null;
+    startY.current = null;
+  };
+
+  return {
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+    style: dragOffset > 0 ? { transform: `translateX(${dragOffset}px)`, transition: 'none' } : undefined,
+  };
+}
 
 export default function WorkoutTab({
   currentWorkout,
@@ -26,13 +66,58 @@ export default function WorkoutTab({
   setShowSqlModal,
   showToast,
 }) {
+  const [activeExIdx, setActiveExIdx] = useState(0);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
+  const [showHeatmapModal, setShowHeatmapModal] = useState(false);
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [muscleFilter, setMuscleFilter] = useState('All');
-
-  // Pop-Out Set Editor / Add Set Modal State
   const [setModalData, setSetModalData] = useState(null);
-  // Structure: { mode: 'add' | 'edit', exId, exName, setId, type, weight, reps, rpe, done }
+
+  // Swipe gestures for modals
+  const setModalSwipe = useSwipeRightToClose(() => setSetModalData(null));
+  const pickerModalSwipe = useSwipeRightToClose(() => setShowExercisePicker(false));
+  const heatmapModalSwipe = useSwipeRightToClose(() => setShowHeatmapModal(false));
+
+  // Horizontal swipe on Exercise Card to switch between exercises
+  const cardTouchX = useRef(null);
+  const handleCardTouchStart = (e) => {
+    cardTouchX.current = e.touches[0].clientX;
+  };
+  const handleCardTouchEnd = (e) => {
+    if (cardTouchX.current === null) return;
+    const dx = e.changedTouches[0].clientX - cardTouchX.current;
+    if (dx > 75 && activeExIdx > 0) {
+      setActiveExIdx((i) => i - 1);
+    } else if (dx < -75 && activeExIdx < currentWorkout.exercises.length - 1) {
+      setActiveExIdx((i) => i + 1);
+    }
+    cardTouchX.current = null;
+  };
+
+  useEffect(() => {
+    if (activeExIdx >= currentWorkout.exercises.length) {
+      setActiveExIdx(Math.max(0, currentWorkout.exercises.length - 1));
+    }
+  }, [currentWorkout.exercises.length, activeExIdx]);
+
+  const getContextualMuscle = () => {
+    const t = currentWorkout.title.toLowerCase();
+    if (t.includes('chest') || t.includes('push')) return 'Chest';
+    if (t.includes('back') || t.includes('pull')) return 'Back';
+    if (t.includes('leg') || t.includes('squat') || t.includes('lower')) return 'Legs';
+    if (t.includes('shoulder')) return 'Shoulders';
+    if (t.includes('arm')) return 'Biceps';
+    return currentWorkout.exercises[activeExIdx]?.muscle || 'All';
+  };
+
+  const activeExercise = currentWorkout.exercises[activeExIdx];
+
+  const cycleRestPreset = () => {
+    const presets = [60, 90, 120, 180];
+    const next = presets[(presets.indexOf(restPreset) + 1) % presets.length] || 90;
+    if (setRestPreset) setRestPreset(next);
+    showToast(`Rest timer preset: ${next}s`);
+  };
 
   const toggleSetDone = (exId, setId) => {
     setCurrentWorkout((prev) => ({
@@ -54,7 +139,6 @@ export default function WorkoutTab({
     }));
   };
 
-  // Open Pop-Out Modal to Add a New Set
   const openAddSetModal = (ex) => {
     const lastSet = ex.sets[ex.sets.length - 1] || { weight: 60, reps: 10, rpe: 8.5 };
     setSetModalData({
@@ -66,11 +150,10 @@ export default function WorkoutTab({
       weight: Number(lastSet.weight) || 60,
       reps: Number(lastSet.reps) || 10,
       rpe: Number(lastSet.rpe) || 8.5,
-      done: true, // Default mark done & trigger rest when logging via pop-out
+      done: true,
     });
   };
 
-  // Open Pop-Out Modal to Edit an Existing Set
   const openEditSetModal = (ex, s) => {
     setSetModalData({
       mode: 'edit',
@@ -85,7 +168,6 @@ export default function WorkoutTab({
     });
   };
 
-  // Save Set from Pop-Out Modal
   const handleSaveSetModal = (e) => {
     e.preventDefault();
     if (!setModalData) return;
@@ -133,8 +215,8 @@ export default function WorkoutTab({
     }
     showToast(
       setModalData.mode === 'add'
-        ? `✅ Logged ${setModalData.weight}${unit.toLowerCase()} × ${setModalData.reps}!`
-        : '✅ Updated set!'
+        ? `Logged ${setModalData.weight}${unit.toLowerCase()} × ${setModalData.reps}`
+        : 'Updated set'
     );
     setSetModalData(null);
   };
@@ -161,6 +243,7 @@ export default function WorkoutTab({
   };
 
   const addExerciseFromLibrary = (item) => {
+    const newIndex = currentWorkout.exercises.length;
     setCurrentWorkout((prev) => ({
       ...prev,
       exercises: [
@@ -170,6 +253,7 @@ export default function WorkoutTab({
           name: item.name,
           muscle: item.muscle,
           equipment: item.equipment,
+          imageUrl: item.imageUrl || null,
           prevBest: item.defaultBest || 'New Lift',
           sets: [
             { id: `s-${Date.now()}-1`, type: '1', weight: 40, reps: 10, rpe: 8.0, done: false },
@@ -177,44 +261,40 @@ export default function WorkoutTab({
         },
       ],
     }));
+    setActiveExIdx(newIndex);
     setShowExercisePicker(false);
     showToast(`Added ${item.name}`);
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 max-w-5xl mx-auto">
       {/* =====================================================================
-           FLOATING POP-OUT REST COUNTDOWN PILL (ONLY APPEARS WHEN RESTING)
+           FLOATING POP-OUT REST COUNTDOWN PILL
       ===================================================================== */}
       {restSeconds > 0 && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 backdrop-blur-md text-white px-5 py-3 rounded-3xl shadow-2xl border border-white/15 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4">
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 backdrop-blur-md text-white px-5 py-2.5 rounded-2xl shadow-2xl border border-white/15 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4">
           <div className="flex items-center gap-2">
-            <Clock className="w-5 h-5 text-orange-400 animate-spin" />
-            <div>
-              <div className="text-[10px] font-extrabold uppercase text-slate-400">
-                REST TIMER
-              </div>
-              <div className="text-xl font-mono font-extrabold text-white">
-                {formatDuration(restSeconds)}
-              </div>
-            </div>
+            <Clock className="w-4 h-4 text-orange-400 animate-spin" />
+            <span className="text-lg font-mono font-extrabold text-white">
+              {formatDuration(restSeconds)}
+            </span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setRestSeconds((s) => Math.max(0, s - 15))}
-              className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-extrabold"
+              className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold"
             >
               -15s
             </button>
             <button
               onClick={() => setRestSeconds((s) => s + 30)}
-              className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-extrabold"
+              className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold"
             >
               +30s
             </button>
             <button
               onClick={() => setRestSeconds(0)}
-              className="px-3 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-xs font-extrabold"
+              className="px-2.5 py-1 rounded-lg bg-red-500 hover:bg-red-600 text-xs font-bold"
             >
               Skip
             </button>
@@ -223,328 +303,446 @@ export default function WorkoutTab({
       )}
 
       {/* =====================================================================
-          WORKOUT HERO BANNER (NOW INCLUDES SESSION TIMER & REST CONTROLS)
+          1. RESPONSIVE HUD HEADER (NO TRUNCATED WORKOUT TITLE)
       ===================================================================== */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-zinc-900 text-white p-6 shadow-lg space-y-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex-1 min-w-[220px]">
-            <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-orange-400 bg-orange-500/15 px-3 py-1 rounded-full mb-2">
-              <Zap className="w-3.5 h-3.5" /> Active Training Session ({unit})
-            </span>
+      <div className="rounded-3xl bg-slate-900 text-white p-4 shadow-md border border-slate-800 space-y-3">
+        {/* Row 1: Split Selector + Full Visible Workout Title */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+          <div className="flex items-center gap-2 w-full">
+            <div className="relative shrink-0">
+              <select
+                value={
+                  Object.keys(WORKOUT_TEMPLATES).find((k) =>
+                    currentWorkout.title.startsWith(k)
+                  ) || ''
+                }
+                onChange={(e) => {
+                  const tplName = e.target.value;
+                  if (!tplName) return;
+                  setCurrentWorkout({
+                    title: WORKOUT_TEMPLATES[tplName].title,
+                    exercises: WORKOUT_TEMPLATES[tplName].exercises,
+                  });
+                  setActiveExIdx(0);
+                  showToast(`Switched to ${tplName}`);
+                }}
+                className="appearance-none bg-orange-500/20 text-orange-400 border border-orange-500/30 font-extrabold text-xs rounded-xl pl-3 pr-7 py-2 focus:outline-none cursor-pointer"
+              >
+                <option value="" disabled>
+                  Switch Split
+                </option>
+                {Object.keys(WORKOUT_TEMPLATES).map((tplName) => (
+                  <option key={tplName} value={tplName} className="bg-slate-900 text-white">
+                    {tplName}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-orange-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
             <input
               type="text"
               value={currentWorkout.title}
               onChange={(e) =>
                 setCurrentWorkout((prev) => ({ ...prev, title: e.target.value }))
               }
-              className="w-full bg-transparent text-2xl sm:text-3xl font-extrabold tracking-tight text-white focus:outline-none border-b border-transparent focus:border-orange-500 pb-0.5"
+              className="flex-1 min-w-0 bg-transparent text-base sm:text-lg font-extrabold tracking-tight text-white focus:outline-none border-b border-transparent focus:border-orange-500"
             />
           </div>
+        </div>
 
-          {/* Integrated Workout Stopwatch & Rest Preset Bar */}
-          <div className="flex flex-wrap items-center gap-2 bg-white/10 p-2 rounded-2xl border border-white/10">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950/80">
+        {/* Row 2: Controls Bar (Wraps cleanly on small phones) */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              onClick={() => setSessionRunning(!sessionRunning)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-mono font-bold"
+              title="Toggle Session Timer"
+            >
               <span
                 className={`w-2 h-2 rounded-full ${
                   sessionRunning ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
                 }`}
               />
-              <span className="font-mono font-extrabold text-sm">
-                {formatDuration(sessionSeconds)}
-              </span>
-              <button
-                onClick={() => setSessionRunning(!sessionRunning)}
-                className="p-1 hover:bg-white/10 rounded-lg"
-              >
-                {sessionRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-              </button>
-            </div>
+              {formatDuration(sessionSeconds)}
+              {sessionRunning ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+            </button>
 
-            {/* Quick Rest Timer Trigger inside Workout */}
-            <div className="flex items-center gap-1">
-              {[60, 90, 120].map((sec) => (
-                <button
-                  key={sec}
-                  onClick={() => {
-                    if ( setRestPreset ) setRestPreset(sec);
-                    setRestSeconds(sec);
-                  }}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-extrabold transition ${
-                    restSeconds > 0 && restPreset === sec
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-white/10 hover:bg-white/20 text-slate-200'
-                  }`}
-                >
-                  ⏱️ {sec}s
-                </button>
-              ))}
-            </div>
+            <button
+              onClick={cycleRestPreset}
+              onDoubleClick={() => setRestSeconds(restPreset)}
+              className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-extrabold text-slate-200 flex items-center gap-1"
+              title="Tap to cycle rest preset"
+            >
+              <Clock className="w-3.5 h-3.5 text-orange-400" />
+              {restPreset}s
+            </button>
+
+            <button
+              onClick={() => setShowHeatmapModal(true)}
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/15 text-orange-400 transition"
+              title="Session Muscle Heatmap"
+            >
+              <Flame className="w-4 h-4" />
+            </button>
 
             <button
               onClick={() => setShowSqlModal(true)}
-              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition"
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 transition"
               title="Cloud & Backup"
             >
               <Database className="w-4 h-4" />
             </button>
           </div>
+
+          <button
+            onClick={syncSessionToSupabase}
+            disabled={syncingCloud}
+            className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-extrabold text-xs flex items-center gap-1 shadow-sm active:scale-95 transition shrink-0"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>{syncingCloud ? 'Syncing' : 'Finish'}</span>
+          </button>
         </div>
 
-        {/* 3 Clean KPI Metrics */}
-        <div className="grid grid-cols-3 gap-4 pt-3 border-t border-white/10">
-          <div className="bg-white/5 rounded-2xl p-3.5">
-            <div className="text-xs font-semibold text-slate-400">VOLUME</div>
-            <div className="text-xl sm:text-2xl font-extrabold mt-0.5">
-              {workoutStats.totalVol.toLocaleString()}{' '}
-              <span className="text-xs font-normal text-slate-400">{unit.toLowerCase()}</span>
-            </div>
-          </div>
-          <div className="bg-white/5 rounded-2xl p-3.5">
-            <div className="text-xs font-semibold text-slate-400">SETS DONE</div>
-            <div className="text-xl sm:text-2xl font-extrabold mt-0.5 text-emerald-400">
-              {workoutStats.doneSets}
-              <span className="text-sm font-semibold text-slate-400">
-                /{workoutStats.totalSets}
+        {/* Row 3: Slim Responsive KPI Strip */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/10 text-xs">
+          <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+            <div>
+              <span className="text-slate-400 font-semibold mr-1">VOL:</span>
+              <span className="font-extrabold text-white">
+                {workoutStats.totalVol.toLocaleString()} {unit.toLowerCase()}
               </span>
             </div>
-          </div>
-          <div className="bg-white/5 rounded-2xl p-3.5">
-            <div className="text-xs font-semibold text-slate-400">AVG RPE</div>
-            <div className="text-xl sm:text-2xl font-extrabold mt-0.5 text-orange-400">
-              {workoutStats.avgRpe}
+            <div>
+              <span className="text-slate-400 font-semibold mr-1">SETS:</span>
+              <span className="font-extrabold text-emerald-400">
+                {workoutStats.doneSets}/{workoutStats.totalSets}
+              </span>
+            </div>
+            <div>
+              <span className="text-slate-400 font-semibold mr-1">RPE:</span>
+              <span className="font-extrabold text-orange-400">{workoutStats.avgRpe}</span>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10">
-          <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-300 cursor-pointer">
             <input
               type="checkbox"
               checked={autoStartRest}
               onChange={(e) => setAutoStartRest(e.target.checked)}
-              className="rounded accent-orange-500 w-4 h-4"
+              className="rounded accent-orange-500 w-3.5 h-3.5"
             />
-            Auto-Rest Timer ({restPreset}s) on ✓
+            Auto-Rest
           </label>
-          <button
-            onClick={syncSessionToSupabase}
-            disabled={syncingCloud}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition"
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            {syncingCloud ? 'Syncing...' : 'Finish & Save Session'}
-          </button>
         </div>
       </div>
 
-      {/* Split Templates & Add Exercise Bar */}
-      <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar pb-1">
-        {Object.keys(WORKOUT_TEMPLATES).map((tplName) => (
-          <button
-            key={tplName}
-            onClick={() => {
-              setCurrentWorkout({
-                title: WORKOUT_TEMPLATES[tplName].title,
-                exercises: WORKOUT_TEMPLATES[tplName].exercises,
-              });
-              showToast(`Loaded ${tplName}`);
-            }}
-            className={`px-4 py-2.5 rounded-2xl text-sm font-bold whitespace-nowrap transition ${
-              currentWorkout.title.startsWith(tplName)
-                ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-md'
-                : 'bg-white text-slate-700 border border-slate-200'
-            }`}
-          >
-            {tplName}
-          </button>
-        ))}
+      {/* =====================================================================
+          2. HORIZONTAL EXERCISE STEPPER (FULL TEXT VISIBLE ON ACTIVE PILL)
+      ===================================================================== */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+        {currentWorkout.exercises.map((ex, idx) => {
+          const isCurrent = idx === activeExIdx;
+          const doneCount = ex.sets.filter((s) => s.done).length;
+          const allDone = ex.sets.length > 0 && doneCount === ex.sets.length;
+
+          return (
+            <button
+              key={ex.id}
+              onClick={() => setActiveExIdx(idx)}
+              className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold whitespace-nowrap flex items-center gap-2 transition border shrink-0 ${
+                isCurrent
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                  : allDone
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <span
+                className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] shrink-0 ${
+                  isCurrent
+                    ? 'bg-orange-500 text-white'
+                    : allDone
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                {allDone ? '✓' : idx + 1}
+              </span>
+              <span className={isCurrent ? '' : 'max-w-[160px] sm:max-w-none truncate'}>
+                {ex.name}
+              </span>
+              <span className="text-[10px] opacity-75">
+                {doneCount}/{ex.sets.length}
+              </span>
+            </button>
+          );
+        })}
+
         <button
           onClick={() => {
-            setMuscleFilter('All');
+            setMuscleFilter(getContextualMuscle());
             setShowExercisePicker(true);
           }}
-          className="px-4 py-2.5 rounded-2xl text-sm font-bold whitespace-nowrap bg-slate-900 text-white flex items-center gap-1.5 shrink-0"
+          className="px-3.5 py-2 rounded-2xl text-xs font-extrabold whitespace-nowrap bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 flex items-center gap-1 shrink-0"
         >
-          <Plus className="w-4 h-4" /> Add Exercise
+          <Plus className="w-3.5 h-3.5" /> Add Lift
         </button>
       </div>
 
       {/* =====================================================================
-          ULTRA-CLEAN EXERCISE CARDS (TAP SET TO EDIT OR "+ ADD SET" POP-OUT)
+          3. ACTIVE EXERCISE FOCUS CARD (3D EXERCISE ILLUSTRATION + FULL TEXT)
       ===================================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {currentWorkout.exercises.map((ex, exIndex) => {
-          const muscleTargets = getExerciseMuscles(ex.name, ex.muscle);
-          return (
-            <div
-              key={ex.id}
-              className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200/80 flex flex-col justify-between space-y-4"
-            >
-              <div>
-                {/* Header + Per-Exercise Anatomical Figure */}
-                <div className="flex items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="w-7 h-7 rounded-xl bg-red-100 text-red-700 font-extrabold text-sm flex items-center justify-center shrink-0">
-                        {exIndex + 1}
-                      </span>
-                      <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 truncate">
-                        {ex.name}
-                      </h3>
-                    </div>
+      {activeExercise ? (
+        <div
+          onTouchStart={handleCardTouchStart}
+          onTouchEnd={handleCardTouchEnd}
+          className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-slate-200/80 space-y-4"
+        >
+          {/* Exercise Header: Responsive layout so long names NEVER truncate to "Bar..." */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
+            <div className="flex items-center gap-3.5">
+              {/* Exercise Movement Illustration Box (Like FitnessProgramer Reference) */}
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-center overflow-hidden shrink-0 p-1">
+                <AnatomyIllustration
+                  exerciseName={activeExercise.name}
+                  imageUrl={activeExercise.imageUrl}
+                  size="lg"
+                />
+              </div>
 
-                    <div className="text-xs font-semibold text-slate-500 mt-1">
-                      {ex.muscle} · {ex.equipment} · Best: <strong className="text-slate-800">{ex.prevBest}</strong>
-                    </div>
+              {/* Full Exercise Title & Metadata (No muscle target tag clutter here) */}
+              <div className="flex-1 min-w-0 space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    {activeExercise.equipment}
+                  </span>
 
-                    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                      {muscleTargets.primary.map((m) => (
-                        <span
-                          key={m}
-                          className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-[#BD1E1E] text-white"
-                        >
-                          {m.replace('_', ' ')}
-                        </span>
-                      ))}
-                      {muscleTargets.secondary.map((m) => (
-                        <span
-                          key={m}
-                          className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-[#FF8A8A]/35 text-red-950 border border-[#FF8A8A]"
-                        >
-                          + {m.replace('_', ' ')}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 shrink-0 bg-slate-50 p-1.5 rounded-2xl border border-slate-200/80">
-                    <AnatomyIllustration
-                      exerciseName={ex.name}
-                      fallbackMuscle={ex.muscle}
-                      size="sm"
-                    />
+                  {/* Mobile Action Buttons aligned cleanly at top-right */}
+                  <div className="flex sm:hidden items-center gap-1">
                     <button
-                      onClick={() => removeExercise(ex.id)}
-                      className="p-1.5 text-slate-400 hover:text-red-600 rounded-xl self-start"
+                      onClick={() => setActiveExIdx((i) => Math.max(0, i - 1))}
+                      disabled={activeExIdx === 0}
+                      className="p-1.5 rounded-xl bg-slate-100 text-slate-600 disabled:opacity-30"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() =>
+                        setActiveExIdx((i) =>
+                          Math.min(currentWorkout.exercises.length - 1, i + 1)
+                        )
+                      }
+                      disabled={activeExIdx === currentWorkout.exercises.length - 1}
+                      className="p-1.5 rounded-xl bg-slate-100 text-slate-600 disabled:opacity-30"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => removeExercise(activeExercise.id)}
+                      className="p-1.5 text-slate-400 hover:text-red-600 rounded-xl"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
 
-                {/* Clean Set Pills List (Tap Pill to Open Pop-Out Editor, Tap ✓ to Complete) */}
-                <div className="space-y-2 mt-3">
-                  {ex.sets.map((s, idx) => {
-                    const e1rm = calc1RM(s.weight, s.reps);
-                    return (
-                      <div
-                        key={s.id}
-                        className={`flex items-center justify-between gap-3 p-3 rounded-2xl border transition ${
-                          s.done
-                            ? 'bg-emerald-50/90 border-emerald-300'
-                            : 'bg-slate-50 hover:bg-slate-100/80 border-slate-200/80'
-                        }`}
-                      >
-                        {/* Click anywhere on the left side to open the Pop-Out Set Editor */}
-                        <button
-                          type="button"
-                          onClick={() => openEditSetModal(ex, s)}
-                          className="flex-1 flex items-center justify-between text-left pr-2"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span
-                              className={`w-8 h-8 rounded-xl font-extrabold text-xs flex items-center justify-center border ${
-                                s.type === 'W'
-                                  ? 'bg-amber-100 text-amber-800 border-amber-300'
-                                  : s.type === 'D'
-                                  ? 'bg-purple-100 text-purple-800 border-purple-300'
-                                  : s.type === 'F'
-                                  ? 'bg-red-100 text-red-800 border-red-300'
-                                  : 'bg-white text-slate-700 border-slate-200'
-                              }`}
-                            >
-                              {s.type || idx + 1}
-                            </span>
-                            <div>
-                              <div className="font-extrabold text-base sm:text-lg text-slate-900">
-                                {s.weight} {unit.toLowerCase()} × {s.reps} reps
-                              </div>
-                              <div className="text-xs font-semibold text-slate-500">
-                                RPE {s.rpe} · Est. 1RM: <strong>{e1rm} {unit.toLowerCase()}</strong>
-                              </div>
-                            </div>
-                          </div>
-                          <Edit3 className="w-4 h-4 text-slate-400 shrink-0" />
-                        </button>
+                {/* Full responsive title — wraps across lines instead of cutting off */}
+                <h3 className="text-lg sm:text-2xl font-extrabold text-slate-900 leading-snug break-words">
+                  {activeExercise.name}
+                </h3>
 
-                        {/* 1-Tap Checkmark Button */}
-                        <button
-                          type="button"
-                          onClick={() => toggleSetDone(ex.id, s.id)}
-                          className={`w-11 h-11 rounded-2xl flex items-center justify-center transition active:scale-90 shrink-0 ${
-                            s.done
-                              ? 'bg-emerald-600 text-white shadow-sm'
-                              : 'bg-white text-slate-400 border border-slate-300'
-                          }`}
-                        >
-                          <Check className="w-6 h-6 stroke-[2.5]" />
-                        </button>
-                      </div>
-                    );
-                  })}
+                <div className="text-xs font-semibold text-slate-500">
+                  PR / Prev Best: <strong className="text-slate-900">{activeExercise.prevBest}</strong>
                 </div>
               </div>
+            </div>
 
-              {/* Pop-Out "+ Add Set" Trigger Button */}
+            {/* Desktop Prev / Next & Delete Controls */}
+            <div className="hidden sm:flex items-center gap-1.5 shrink-0 self-start sm:self-center">
               <button
-                onClick={() => openAddSetModal(ex)}
-                className="w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-xs active:scale-98 transition"
+                onClick={() => setActiveExIdx((i) => Math.max(0, i - 1))}
+                disabled={activeExIdx === 0}
+                className="p-2 rounded-xl bg-slate-100 text-slate-600 disabled:opacity-30 hover:bg-slate-200"
+                title="Previous Exercise"
               >
-                <Plus className="w-4 h-4" /> Add Set
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() =>
+                  setActiveExIdx((i) =>
+                    Math.min(currentWorkout.exercises.length - 1, i + 1)
+                  )
+                }
+                disabled={activeExIdx === currentWorkout.exercises.length - 1}
+                className="p-2 rounded-xl bg-slate-100 text-slate-600 disabled:opacity-30 hover:bg-slate-200"
+                title="Next Exercise"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => removeExercise(activeExercise.id)}
+                className="p-2 text-slate-400 hover:text-red-600 rounded-xl ml-1"
+                title="Remove Exercise"
+              >
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
-          );
-        })}
-      </div>
+          </div>
 
-      {/* Full Session Combined Muscle Heatmap Card */}
-      <MuscleHeatmapCard
-        exercises={currentWorkout.exercises}
-        unit={unit}
-        onQuickAddMuscle={(muscleName) => {
-          setMuscleFilter(muscleName);
-          setShowExercisePicker(true);
-        }}
-      />
+          {/* 2-Column Set Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {activeExercise.sets.map((s, idx) => {
+              const e1rm = calc1RM(s.weight, s.reps);
+              return (
+                <div
+                  key={s.id}
+                  className={`flex items-center justify-between gap-2 p-3 rounded-2xl border transition ${
+                    s.done
+                      ? 'bg-emerald-50/90 border-emerald-300'
+                      : 'bg-slate-50 hover:bg-slate-100/80 border-slate-200/80'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => openEditSetModal(activeExercise, s)}
+                    className="flex-1 flex items-center justify-between text-left pr-2 min-w-0"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span
+                        className={`w-7 h-7 rounded-xl font-extrabold text-xs flex items-center justify-center border shrink-0 ${
+                          s.type === 'W'
+                            ? 'bg-amber-100 text-amber-800 border-amber-300'
+                            : s.type === 'D'
+                            ? 'bg-purple-100 text-purple-800 border-purple-300'
+                            : s.type === 'F'
+                            ? 'bg-red-100 text-red-800 border-red-300'
+                            : 'bg-white text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        {s.type || idx + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="font-extrabold text-base text-slate-900 truncate">
+                          {s.weight} {unit.toLowerCase()} × {s.reps}
+                        </div>
+                        <div className="text-[11px] font-semibold text-slate-500">
+                          RPE {s.rpe} · 1RM: <strong>{e1rm}</strong>
+                        </div>
+                      </div>
+                    </div>
+                    <Edit3 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => toggleSetDone(activeExercise.id, s.id)}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition active:scale-90 shrink-0 ${
+                      s.done
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-white text-slate-400 border border-slate-300'
+                    }`}
+                  >
+                    <Check className="w-5 h-5 stroke-[2.5]" />
+                  </button>
+                </div>
+              );
+            })}
+
+            <button
+              onClick={() => openAddSetModal(activeExercise)}
+              className="min-h-[62px] rounded-2xl border-2 border-dashed border-slate-300 hover:border-slate-900 text-slate-600 hover:text-slate-900 font-extrabold text-sm flex items-center justify-center gap-1.5 transition"
+            >
+              <Plus className="w-4 h-4" /> Log Next Set
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-3xl p-8 text-center border border-slate-200">
+          <p className="text-sm font-bold text-slate-500 mb-3">No exercises in this session yet.</p>
+          <button
+            onClick={() => {
+              setMuscleFilter(getContextualMuscle());
+              setShowExercisePicker(true);
+            }}
+            className="px-4 py-2.5 rounded-xl bg-slate-900 text-white font-extrabold text-xs inline-flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" /> Add First Exercise
+          </button>
+        </div>
+      )}
 
       {/* =====================================================================
-          POP-OUT WINDOW 1: ADD / EDIT SET MODAL
+          POP-OUT MODAL: MUSCLE HEATMAP (SWIPE RIGHT TO RETURN)
       ===================================================================== */}
-      {setModalData && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <form
-            onSubmit={handleSaveSetModal}
-            className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 space-y-5 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150"
+      {showHeatmapModal && (
+        <div
+          onClick={() => setShowHeatmapModal(false)}
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            {...heatmapModalSwipe}
+            className="bg-white w-full max-w-2xl rounded-3xl p-5 max-h-[90vh] overflow-y-auto shadow-2xl space-y-3"
           >
             <div className="flex items-center justify-between">
               <div>
+                <h3 className="text-lg font-extrabold text-slate-900">Session Muscle Activation</h3>
+                <p className="text-[11px] font-semibold text-slate-400">Swipe right or tap X to return</p>
+              </div>
+              <button
+                onClick={() => setShowHeatmapModal(false)}
+                className="p-2 rounded-full bg-slate-100 text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <MuscleHeatmapCard
+              exercises={currentWorkout.exercises}
+              unit={unit}
+              onQuickAddMuscle={(muscleName) => {
+                setShowHeatmapModal(false);
+                setMuscleFilter(muscleName);
+                setShowExercisePicker(true);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          POP-OUT WINDOW 1: ADD / EDIT SET MODAL (SWIPE RIGHT TO RETURN)
+      ===================================================================== */}
+      {setModalData && (
+        <div
+          onClick={() => setSetModalData(null)}
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
+        >
+          <form
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={handleSaveSetModal}
+            {...setModalSwipe}
+            className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 space-y-5 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
                 <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-red-100 text-red-800">
-                  {setModalData.mode === 'add' ? 'NEW SET' : 'EDIT SET'}
+                  {setModalData.mode === 'add' ? 'NEW SET' : 'EDIT SET'} · Swipe Right to Return
                 </span>
-                <h3 className="text-xl font-extrabold text-slate-900 mt-1">
+                <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1 break-words">
                   {setModalData.exName}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setSetModalData(null)}
-                className="p-2 rounded-full bg-slate-100 text-slate-600"
+                className="p-2 rounded-full bg-slate-100 text-slate-600 shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Set Type Selector */}
             <div>
               <label className="text-xs font-extrabold uppercase text-slate-400">
                 Set Type
@@ -561,7 +759,8 @@ export default function WorkoutTab({
                     type="button"
                     onClick={() => setSetModalData({ ...setModalData, type: t.id })}
                     className={`py-2.5 rounded-xl font-extrabold text-xs border transition ${
-                      (setModalData.type === t.id || (!['W', 'D', 'F'].includes(setModalData.type) && t.id === '1'))
+                      (setModalData.type === t.id ||
+                        (!['W', 'D', 'F'].includes(setModalData.type) && t.id === '1'))
                         ? 'bg-slate-900 text-white border-slate-900'
                         : 'bg-slate-50 text-slate-600 border-slate-200'
                     }`}
@@ -572,7 +771,6 @@ export default function WorkoutTab({
               </div>
             </div>
 
-            {/* Big Weight & Reps Steppers */}
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-2">
                 <label className="text-xs font-extrabold uppercase text-slate-500">
@@ -585,7 +783,7 @@ export default function WorkoutTab({
                   onChange={(e) =>
                     setSetModalData({ ...setModalData, weight: e.target.value })
                   }
-                  className="w-full py-2 text-center font-extrabold text-3xl bg-white rounded-xl border border-slate-300"
+                  className="w-full py-2 text-center font-extrabold text-2xl sm:text-3xl bg-white rounded-xl border border-slate-300 text-slate-900"
                 />
                 <div className="flex justify-center gap-2">
                   <button
@@ -596,7 +794,7 @@ export default function WorkoutTab({
                         weight: Math.max(0, Number(setModalData.weight) - 2.5),
                       })
                     }
-                    className="px-3 py-1.5 rounded-xl bg-white border border-slate-300 font-extrabold text-xs"
+                    className="px-3 py-1.5 rounded-xl bg-white border border-slate-300 font-extrabold text-xs text-slate-700"
                   >
                     -2.5
                   </button>
@@ -625,7 +823,7 @@ export default function WorkoutTab({
                   onChange={(e) =>
                     setSetModalData({ ...setModalData, reps: e.target.value })
                   }
-                  className="w-full py-2 text-center font-extrabold text-3xl bg-white rounded-xl border border-slate-300"
+                  className="w-full py-2 text-center font-extrabold text-2xl sm:text-3xl bg-white rounded-xl border border-slate-300 text-slate-900"
                 />
                 <div className="flex justify-center gap-2">
                   <button
@@ -636,7 +834,7 @@ export default function WorkoutTab({
                         reps: Math.max(1, Number(setModalData.reps) - 1),
                       })
                     }
-                    className="px-3.5 py-1.5 rounded-xl bg-white border border-slate-300 font-extrabold text-xs"
+                    className="px-3.5 py-1.5 rounded-xl bg-white border border-slate-300 font-extrabold text-xs text-slate-700"
                   >
                     -1
                   </button>
@@ -656,12 +854,12 @@ export default function WorkoutTab({
               </div>
             </div>
 
-            {/* RPE Effort Pill Selector */}
             <div>
               <div className="flex justify-between text-xs font-extrabold text-slate-500 mb-1.5">
                 <span>Effort (RPE)</span>
                 <span className="text-orange-600">
-                  Est. 1RM: {calc1RM(setModalData.weight, setModalData.reps)} {unit.toLowerCase()}
+                  Est. 1RM: {calc1RM(setModalData.weight, setModalData.reps)}{' '}
+                  {unit.toLowerCase()}
                 </span>
               </div>
               <div className="grid grid-cols-6 gap-1.5">
@@ -682,7 +880,6 @@ export default function WorkoutTab({
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex items-center gap-2.5 pt-2">
               {setModalData.mode === 'edit' && (
                 <button
@@ -707,48 +904,65 @@ export default function WorkoutTab({
       )}
 
       {/* =====================================================================
-          POP-OUT WINDOW 2: EXERCISE PICKER MODAL
+          POP-OUT WINDOW 2: EXERCISE PICKER MODAL (SWIPE RIGHT TO RETURN)
       ===================================================================== */}
       {showExercisePicker && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white w-full max-w-xl rounded-t-3xl sm:rounded-3xl p-5 max-h-[88vh] flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xl font-extrabold text-slate-900">Select Exercise</h3>
-              <button onClick={() => setShowExercisePicker(false)} className="p-2 rounded-full bg-slate-100">
-                <X className="w-5 h-5" />
-              </button>
+        <div
+          onClick={() => setShowExercisePicker(false)}
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            {...pickerModalSwipe}
+            className="bg-white w-full max-w-xl rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col shadow-2xl"
+          >
+            <div className="flex items-center justify-between mb-3 gap-2">
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900">
+                  Add Exercise ({muscleFilter})
+                </h3>
+                <p className="text-xs font-semibold text-slate-400">
+                  Swipe right or tap X to return
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={muscleFilter}
+                  onChange={(e) => setMuscleFilter(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 font-extrabold text-xs focus:outline-none"
+                >
+                  {['All', 'Chest', 'Back', 'Shoulders', 'Legs', 'Triceps', 'Biceps'].map(
+                    (m) => (
+                      <option key={m} value={m}>
+                        {m === 'All' ? 'All Muscles' : m}
+                      </option>
+                    )
+                  )}
+                </select>
+                <button
+                  onClick={() => setShowExercisePicker(false)}
+                  className="p-2 rounded-full bg-slate-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="relative mb-3">
-              <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-3.5" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
               <input
                 type="text"
                 value={exerciseSearch}
                 onChange={(e) => setExerciseSearch(e.target.value)}
-                placeholder="Search exercise or equipment..."
-                className="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-100 font-medium focus:outline-none"
+                placeholder="Search lift or equipment..."
+                className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-100 text-sm font-medium text-slate-900 focus:outline-none"
               />
             </div>
 
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar mb-3 pb-1">
-              {['All', 'Chest', 'Back', 'Shoulders', 'Legs', 'Triceps', 'Biceps'].map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMuscleFilter(m)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition ${
-                    muscleFilter === m
-                      ? 'bg-[#BD1E1E] text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-
-            <div className="overflow-y-auto space-y-2.5 flex-1 pr-1">
+            <div className="overflow-y-auto space-y-2 flex-1 pr-1">
               {EXERCISE_LIBRARY.filter((item) => {
-                const matchesMuscle = muscleFilter === 'All' || item.muscle === muscleFilter;
+                const matchesMuscle =
+                  muscleFilter === 'All' || item.muscle === muscleFilter;
                 const matchesText =
                   item.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
                   item.equipment.toLowerCase().includes(exerciseSearch.toLowerCase());
@@ -757,24 +971,26 @@ export default function WorkoutTab({
                 <button
                   key={item.name}
                   onClick={() => addExerciseFromLibrary(item)}
-                  className="w-full p-3 rounded-2xl bg-slate-50 hover:bg-red-50/50 border border-slate-200 flex items-center justify-between text-left transition"
+                  className="w-full p-2.5 rounded-2xl bg-slate-50 hover:bg-orange-50/60 border border-slate-200 flex items-center justify-between text-left transition gap-3"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="bg-white p-1 rounded-xl border border-slate-200 shrink-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-14 h-14 bg-white p-1 rounded-xl border border-slate-200 shrink-0 flex items-center justify-center overflow-hidden">
                       <AnatomyIllustration
                         exerciseName={item.name}
-                        fallbackMuscle={item.muscle}
+                        imageUrl={item.imageUrl}
                         size="sm"
                       />
                     </div>
-                    <div>
-                      <div className="font-extrabold text-base text-slate-900">{item.name}</div>
-                      <div className="text-xs font-bold text-slate-500 mt-0.5">
-                        {item.muscle} · {item.equipment} · Best: {item.defaultBest}
+                    <div className="min-w-0">
+                      <div className="font-extrabold text-sm text-slate-900 break-words">
+                        {item.name}
+                      </div>
+                      <div className="text-xs font-semibold text-slate-500">
+                        {item.equipment} · Best: {item.defaultBest}
                       </div>
                     </div>
                   </div>
-                  <Plus className="w-6 h-6 text-[#BD1E1E] shrink-0 mr-1" />
+                  <Plus className="w-5 h-5 text-orange-600 shrink-0 mr-1" />
                 </button>
               ))}
             </div>
